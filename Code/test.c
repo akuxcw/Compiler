@@ -1,10 +1,5 @@
-struct Complex
+int inc()
 {
-float real, image;
-};
-int main()
-{
-	truct Complex x;
-	y.image/*12534*/ = 3.5;
-	asdfg sadfg;
+	nt i;
+	i = i + 1;
 }
