@@ -34,7 +34,7 @@ Program : ExtDefList {
 }
 ;
 ExtDefList : ExtDef ExtDefList {build_tree(&$$, "ExtDefList", 2, $1, $2);}
-|
+| {$$ = NULL;}
 ;
 ExtDef : Specifier ExtDecList SEMI {build_tree(&$$, "ExtDef", 3, $1, $2, $3);}
 | Specifier SEMI {build_tree(&$$, "ExtDef", 2, $1, $2);}
@@ -56,7 +56,7 @@ OptTag : ID {build_tree(&$$, "OptTag", 1, $1);}
 Tag : ID {build_tree(&$$, "Tag", 1, $1);}
 ;
 /* Declarators */
-VarDec : ID {build_tree(&$$, "VaeDec", 1, $1);}
+VarDec : ID {build_tree(&$$, "VarDec", 1, $1);}
 | VarDec LB INT RB {build_tree(&$$, "VarDec", 4, $1, $2, $3, $4);}
 ;
 FunDec : ID LP VarList RP {build_tree(&$$, "FunDec", 4, $1, $2, $3, $4);}

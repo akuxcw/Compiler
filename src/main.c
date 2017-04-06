@@ -3,6 +3,7 @@
 extern int lines;
 void yyparse();
 extern syntax_tree_type * syntax_tree_root;
+
 int main() {
 	lines = 1;
 	yyparse();
