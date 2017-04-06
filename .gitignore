@@ -8,5 +8,6 @@
 !*.txt
 !.gitignore
 !.*
+!testcase/*
 *.swp
 obj/*

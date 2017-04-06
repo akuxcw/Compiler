@@ -4,7 +4,9 @@
 #define YYSTYPE syntax_tree_type*
 #include "syntax.h"
 int lines;
+extern int error_state;
 int yycolumn = 1;
+char errmsg[] = "Mysterious characters \' \'.";
 #define YY_USER_ACTION \
 	yylloc.first_line = yylloc.last_line = yylineno; \
 	yylloc.first_column = yycolumn; \
@@ -26,8 +28,15 @@ letter [_a-zA-Z]
 digit [0-9]
 %%
 "//".*$ {/*work(NOTE;*/}
-"/*"(.|\n)*"*/" {/*work(NOTES;*/}
-(0|([1-9]+{digit}*)|(0[0-7]+)|(0(x|X)({digit}|[a-fA-F])+)) {work(INT)}
+\/\* {
+	char ch1 = 0, ch2 = input();
+	while (ch2 > 0 && !((ch1 == '*')&&(ch2 == '/'))) {
+		ch1 = ch2;
+		ch2 = input();
+	}
+//	printf("%s\n", yytext);/*work(NOTES;*/
+}
+(([0-9]+{digit}*)|(0(x|X)({digit}|[a-zA-Z])+)) {work(INT)}
 {digit}+\.{digit}+([eE][+-]?{digit}+)? {work(FLOAT)}
 ; {work(SEMI)}
 , {work(COMMA)}
@@ -56,8 +65,12 @@ while {work(WHILE)}
 {letter}({letter}|{digit})* {work(ID)}
 " "|\t {}
 \n {lines ++; yycolumn = 1;}
-. {printf("Error type A at Line %d: Mysterious characters \'%s\'\n", lines, yytext);}
+. {errmsg[23] = yytext[0]; lerror(errmsg);}
 %%
+void lerror(const char * str) {
+	printf("Error type A at Line %d: %s\n", lines, str); 
+	error_state = 1;
+}
 /*int main(int argc, char** argv) {
 	if (argc > 1) {
 		if (!(yyin = fopen(argv[1], "r"))) {

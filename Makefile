@@ -5,6 +5,7 @@ BISON 	:= bison
 CFLAGS 	:= -std=c99
 #CFLAGS	+= -std=gnu11 -m32 -c #编译标准, 目标架构, 只编译
 CFLAGS	+= -I include/
+CFLAGS 	+= -Wimplicit-function-declaration
 
 SRC_DIR	:= src
 OBJ_DIR	:= obj
@@ -22,9 +23,9 @@ OBJS	:= $(CFILES:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
 PARSER	:= obj/parser
 
-all: parser
+all: $(PARSER)
 
-parser: $(CFILES) $(LFC) $(YFC)
+$(PARSER): $(CFILES) $(LFC) $(YFC)
 	@mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -o $(PARSER) $(CFILES) $(LFC) $(YFC) -lfl -ly
 #	$(LD) -o -e main $(PARSER) $(OBJS) $(LFO) $(YFO) -lfl -ly

@@ -39,6 +39,7 @@ ExtDefList : ExtDef ExtDefList {build_tree(&$$, "ExtDefList", 2, $1, $2);}
 ExtDef : Specifier ExtDecList SEMI {build_tree(&$$, "ExtDef", 3, $1, $2, $3);}
 | Specifier SEMI {build_tree(&$$, "ExtDef", 2, $1, $2);}
 | Specifier FunDec CompSt {build_tree(&$$, "ExtDef", 3, $1, $2, $3);}
+| Error_state
 ;
 ExtDecList : VarDec {build_tree(&$$, "ExtDecList", 1, $1);}
 | VarDec COMMA ExtDecList {build_tree(&$$, "ExtDecList", 3, $1, $2, $3);}
@@ -51,7 +52,7 @@ StructSpecifier : STRUCT OptTag LC DefList RC {build_tree(&$$, "StructSpecifier"
 | STRUCT Tag {build_tree(&$$, "StructSpecifier", 2, $1, $2);}
 ;
 OptTag : ID {build_tree(&$$, "OptTag", 1, $1);}
-|
+| {$$ = NULL;}
 ;
 Tag : ID {build_tree(&$$, "Tag", 1, $1);}
 ;
@@ -79,6 +80,7 @@ Stmt : Exp SEMI {build_tree(&$$, "Stmt", 2, $1, $2);}
 | IF LP Exp RP Stmt %prec LOWER_THAN_ELSE {build_tree(&$$, "Stmt", 5, $1, $2, $3, $4, $5);}
 | IF LP Exp RP Stmt ELSE Stmt {build_tree(&$$, "Stmt", 7, $1, $2, $3, $4, $5, $6, $7);}
 | WHILE LP Exp RP Stmt {build_tree(&$$, "Stmt", 5, $1, $2, $3, $4, $5);}
+| Error_state
 /*| error SEMI*/
 ;
 /* Local Definitions */
@@ -116,10 +118,11 @@ Exp : Exp ASSIGNOP Exp {build_tree(&$$, "Exp", 3, $1, $2, $3);}
 ;
 Args : Exp COMMA Args {build_tree(&$$, "Args", 3, $1, $2, $3);}
 | Exp {build_tree(&$$, "Args", 1, $1);}
+Error_state : error SEMI;
 ;
 %%
-int yyerror(char* msg) {
+int yyerror(const char* msg) {
 	error_state = 1;
-	fprintf(stderr, "error: %s %d\n", msg, yylloc.first_line);
+	fprintf(stderr, "Error type B at Line %d: %s.\n", yylloc.first_line, msg);
 	return 0;
 }

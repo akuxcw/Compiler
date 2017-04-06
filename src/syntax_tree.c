@@ -8,11 +8,61 @@ char * toStr(const char * str) {
 }
 
 int toInt(const char * str) {
-	return atoi(str);
+	int i;
+	int val = 0;
+	if(!strcmp(str, "0")) return 0;
+	if(str[0] == '0') {
+		if(str[1] == 'x' || str[1] == 'X') {
+			for(i = 2; i < strlen(str); ++ i) {
+				if(str[i] >= '0' && str[i] <= '9') {
+					val = val * 16 + str[i] - '0';
+				} else if(toupper(str[i]) >= 'A' && toupper(str[i]) <= 'F') {
+					val = val * 16 + toupper(str[i]) - 'A' + 10;
+				} else {
+					lerror("Illegal hexadecimal number");
+					return 0;
+				}
+			}
+		} else {
+			for(i = 1; i < strlen(str); ++ i) {
+				if(str[i] >= '0' && str[i] <= '7') {
+					val = val * 8 + str[i] - '0';
+				} else {
+					lerror("Illegal octal number");
+					return 0;
+				}
+			}
+		}
+	} else val = atoi(str);
+	return val;
 }
 
 double toFloat(const char * str) {
-	return 1.4;
+	int i = -1;
+	double val = 0;
+	while(++ i < strlen(str)) {
+		if(str[i] == '.') {
+			double div = 10.0;
+			while(++i < strlen(str)) {
+				if(toupper(str[i]) == 'E') {
+					int e = 0;
+					int flag = 0;
+					if(str[i+1] == '-') {
+						flag = 1;
+						i ++;
+					}
+					while(++ i < strlen(str)) {
+						e = e * 10 + str[i] - '0';
+					}
+					while(e --) if(flag) val /= 10;else val *= 10;
+				} else {
+					val = val + (double)(str[i] - '0') / div;
+					div *= 10;
+				}
+			}
+		} else val = val * 10 + str[i] - '0';
+	}
+	return val;
 }
 
 void build_tree(syntax_tree_type ** node, const char * name, int carg, ...) {

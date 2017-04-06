@@ -21,4 +21,10 @@ void print_tree(syntax_tree_type *, int);
 char * toStr(const char *);
 int toInt(const char *);
 double toFloat(const char *);
+int toupper(int);
+void lerror(const char *);
+int fileno(FILE *);
+int yylex();
+int yyerror(const char *);
+
 #endif // COMPILER_SYNTAX_TREE_H_
