@@ -42,7 +42,7 @@ $(LFC): $(LFILE) $(YFC)
 #	$(CC) $(CFLAGS) -o $(LFO) $(LFC)
 
 $(YFC): $(YFILE)
-	$(BISON) -d -o $(YFC) $(YFILE)
+	$(BISON) -v -d -o $(YFC) $(YFILE)
 #	$(CC) $(CFLAGS) -o $(YFO) $(YFC)
 
 .PHONY: clean test submit
@@ -55,7 +55,7 @@ clean:
 	rm -rf obj/*
 
 submit: clean
-	cd .. && tar cvj $(shell pwd | grep -o '[^/]*$$') > 141220012_lab1.tar.bz2
+	cd .. && zip -r 141220012_lab1.zip $(shell pwd | grep -o '[^/]*$$')
 
 #all :
 #	$(FLEX) -o src/lexical.c src/lexical.l

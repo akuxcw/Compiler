@@ -10,7 +10,7 @@ typedef struct SyntaxTreeType {
 	char * name;
 	union {
 		int int_val;
-		double float_val;
+		float float_val;
 		char * str_val;
 	};
 	struct SyntaxTreeType *child, *next;
@@ -20,7 +20,7 @@ void BuildTree(SyntaxTreeType **, const char *, int, ...);
 void PrintTree(SyntaxTreeType *, int);
 char * toStr(const char *);
 int toInt(const char *);
-double toFloat(const char *);
+float toFloat(const char *);
 int toupper(int);
 void lerror(const char *);
 int fileno(FILE *);

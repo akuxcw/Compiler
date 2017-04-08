@@ -37,12 +37,12 @@ int toInt(const char * str) {
 	return val;
 }
 
-double toFloat(const char * str) {
+float toFloat(const char * str) {
 	int i = -1;
-	double val = 0;
+	float val = 0;
 	while(++ i < strlen(str)) {
 		if(str[i] == '.') {
-			double div = 10.0;
+			float div = 10.0;
 			while(++i < strlen(str)) {
 				if(toupper(str[i]) == 'E') {
 					int e = 0;
@@ -56,7 +56,7 @@ double toFloat(const char * str) {
 					}
 					while(e --) if(flag) val /= 10;else val *= 10;
 				} else {
-					val = val + (double)(str[i] - '0') / div;
+					val = val + (float)(str[i] - '0') / div;
 					div *= 10;
 				}
 			}
@@ -96,7 +96,7 @@ void PrintTree(SyntaxTreeType * root, int k) {
 	if(root->type == NONTERMINAL) printf(" (%d)", root->line_no); else 
 	if(!strcmp(root->name, "ID") || !strcmp(root->name, "TYPE")) printf(": %s", root->str_val); else
 	if(!strcmp(root->name, "INT")) printf(": %d", root->int_val); else 
-	if(!strcmp(root->name, "FLOAT")) printf(": %lf", root->float_val);
+	if(!strcmp(root->name, "FLOAT")) printf(": %f", root->float_val);
 	printf("\n");
 	PrintTree(root->child, k+1);
 	PrintTree(root->next, k);
