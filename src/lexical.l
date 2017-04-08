@@ -1,7 +1,7 @@
 %option yylineno
 %{
 #include "syntax_tree.h"	
-#define YYSTYPE syntax_tree_type*
+#define YYSTYPE SyntaxTreeType*
 #include "syntax.h"
 int lines;
 extern int error_state;
@@ -13,8 +13,8 @@ char errmsg[] = "Mysterious characters \' \'.";
 	yylloc.last_column = yycolumn + yyleng - 1; \
 	yycolumn += yyleng;
 
-#define work(token) \
-	yylval = (YYSTYPE)malloc(sizeof(syntax_tree_type)); \
+#define WORK(token) \
+	yylval = (YYSTYPE)malloc(sizeof(SyntaxTreeType)); \
 	yylval->name = toStr(#token); \
 	yylval->line_no = yylineno; \
 	yylval->type = TERMINAL; \
@@ -27,42 +27,42 @@ char errmsg[] = "Mysterious characters \' \'.";
 letter [_a-zA-Z]
 digit [0-9]
 %%
-"//".*$ {/*work(NOTE;*/}
+"//".*$ {/*WORK(NOTE;*/}
 \/\* {
 	char ch1 = 0, ch2 = input();
 	while (ch2 > 0 && !((ch1 == '*')&&(ch2 == '/'))) {
 		ch1 = ch2;
 		ch2 = input();
 	}
-//	printf("%s\n", yytext);/*work(NOTES;*/
+//	printf("%s\n", yytext);/*WORK(NOTES;*/
 }
-(([0-9]+{digit}*)|(0(x|X)({digit}|[a-zA-Z])+)) {work(INT)}
-{digit}+\.{digit}+([eE][+-]?{digit}+)? {work(FLOAT)}
-; {work(SEMI)}
-, {work(COMMA)}
-= {work(ASSIGNOP)}
->|<|(>=)|(<=)|(==)|(!=) {work(RELOP)}
-\+ {work(PLUS)}
-- {work(MINUS)}
-\* {work(STAR)}
-\/ {work(DIV)}
-&& {work(AND)}
-\|\| {work(OR)}
-\. {work(DOT)}
-! {work(NOT)}
-(int)|(float) {work(TYPE)}
-\( {work(LP)}
-\) {work(RP)}
-"[" {work(LB)}
-"]" {work(RB)}
-\{ {work(LC)}
-\} {work(RC)}
-struct {work(STRUCT)}
-return {work(RETURN)}
-if {work(IF)}
-else {work(ELSE)}
-while {work(WHILE)}
-{letter}({letter}|{digit})* {work(ID)}
+(([0-9]+{digit}*)|(0(x|X)({digit}|[a-zA-Z])+)) {WORK(INT)}
+{digit}+\.{digit}+([eE][+-]?{digit}+)? {WORK(FLOAT)}
+; {WORK(SEMI)}
+, {WORK(COMMA)}
+= {WORK(ASSIGNOP)}
+>|<|(>=)|(<=)|(==)|(!=) {WORK(RELOP)}
+\+ {WORK(PLUS)}
+- {WORK(MINUS)}
+\* {WORK(STAR)}
+\/ {WORK(DIV)}
+&& {WORK(AND)}
+\|\| {WORK(OR)}
+\. {WORK(DOT)}
+! {WORK(NOT)}
+(int)|(float) {WORK(TYPE)}
+\( {WORK(LP)}
+\) {WORK(RP)}
+"[" {WORK(LB)}
+"]" {WORK(RB)}
+\{ {WORK(LC)}
+\} {WORK(RC)}
+struct {WORK(STRUCT)}
+return {WORK(RETURN)}
+if {WORK(IF)}
+else {WORK(ELSE)}
+while {WORK(WHILE)}
+{letter}({letter}|{digit})* {WORK(ID)}
 " "|\t {}
 \n {lines ++; yycolumn = 1;}
 . {errmsg[23] = yytext[0]; lerror(errmsg);}

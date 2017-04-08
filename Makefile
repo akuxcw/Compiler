@@ -45,12 +45,17 @@ $(YFC): $(YFILE)
 	$(BISON) -d -o $(YFC) $(YFILE)
 #	$(CC) $(CFLAGS) -o $(YFO) $(YFC)
 
-.PHONY: clean
+.PHONY: clean test submit
+
+file	:= test.cmm
 
 test:
-	./$(PARSER) < testcase/test.cmm
+	./$(PARSER) < testcase/$(file)
 clean:
 	rm -rf obj/*
+
+submit: clean
+	cd .. && tar cvj $(shell pwd | grep -o '[^/]*$$') > 141220012_lab1.tar.bz2
 
 #all :
 #	$(FLEX) -o src/lexical.c src/lexical.l

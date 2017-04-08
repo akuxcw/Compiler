@@ -65,22 +65,22 @@ double toFloat(const char * str) {
 	return val;
 }
 
-void build_tree(syntax_tree_type ** node, const char * name, int carg, ...) {
-	*node = (syntax_tree_type *)malloc(sizeof(syntax_tree_type));
-	syntax_tree_type * root = *node; 
+void BuildTree(SyntaxTreeType ** node, const char * name, int carg, ...) {
+	*node = (SyntaxTreeType *)malloc(sizeof(SyntaxTreeType));
+	SyntaxTreeType * root = *node; 
 	va_list ap;
 	va_start(ap, carg);
 	int i;
-	syntax_tree_type * child;
+	SyntaxTreeType * child;
 	root->type = NONTERMINAL;
 	for(i = 0; i < carg; ++ i) {
-		child = va_arg(ap, syntax_tree_type *);
+		child = va_arg(ap, SyntaxTreeType *);
 		if(root->child == NULL) {
 			root->name = toStr(name);
 			root->line_no = child->line_no;
 			root->child = child;
 		} else {
-			syntax_tree_type * tmp = root->child;
+			SyntaxTreeType * tmp = root->child;
 			while(tmp->next != NULL) tmp = tmp->next;
 			tmp->next = child;
 		}
@@ -88,7 +88,7 @@ void build_tree(syntax_tree_type ** node, const char * name, int carg, ...) {
 	va_end(ap);
 }
 
-void print_tree(syntax_tree_type * root, int k) {
+void PrintTree(SyntaxTreeType * root, int k) {
 	if(root == NULL) return;
 	int i;
 	for(i = 1; i <= k; ++ i) printf("  ");
@@ -98,6 +98,6 @@ void print_tree(syntax_tree_type * root, int k) {
 	if(!strcmp(root->name, "INT")) printf(": %d", root->int_val); else 
 	if(!strcmp(root->name, "FLOAT")) printf(": %lf", root->float_val);
 	printf("\n");
-	print_tree(root->child, k+1);
-	print_tree(root->next, k);
+	PrintTree(root->child, k+1);
+	PrintTree(root->next, k);
 }
