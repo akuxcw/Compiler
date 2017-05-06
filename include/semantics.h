@@ -12,7 +12,7 @@ SymbolType * Specifier(SyntaxTreeType *);
 SymbolType * StructSpecifier(SyntaxTreeType *);
 void ExtDecList(SyntaxTreeType *, SymbolType *);
 void VarDec(SyntaxTreeType *, SymbolType *, int);
-void FunDec(SyntaxTreeType *, SymbolType *);
+void FunDec(SyntaxTreeType *, SymbolType *, int);
 void CompSt(SyntaxTreeType *, SymbolType *, int);
 void DefList(SyntaxTreeType *, int);
 void Def(SyntaxTreeType *, int);

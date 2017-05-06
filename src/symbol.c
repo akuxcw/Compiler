@@ -41,7 +41,7 @@ bool isID(SyntaxTreeType * node) {
 }
 
 void addType(SymbolType * ntype, int line_no) {
-	printf("addtype\n");
+	if(DEBUG) printf("addtype\n");
 	SymbolType * type = getType(ntype->name);
 	if(type != NULL) {
 		serror(16, line_no, "redef");
@@ -51,7 +51,7 @@ void addType(SymbolType * ntype, int line_no) {
 }
 
 SymbolType * getType(char * name) {
-	printf("gettype %s\n", name);
+	if(DEBUG) printf("gettype %s\n", name);
 	ListHead * ptr;
 	list_foreach(ptr, &type_table) {
 		SymbolType * tmp = list_entry(ptr, SymbolType, list);
@@ -61,14 +61,19 @@ SymbolType * getType(char * name) {
 }
 
 void addSymbol(char * name, SymbolType * type, int line_no, int lv) {
-	printf("add %s\n", name);
+	if(DEBUG) printf("add %s\n", name);
 	unsigned int h = hash(name);
 	while(!list_empty(&symbol_table[h])) {
 		SymbolTable * tmp = list_entry(symbol_table[h].next, SymbolTable, list);
 		if(!strcmp(tmp->name, name)){
 			if(tmp->lv == lv) {
-				if(tmp->type->fun) serror(4, line_no, name);
-				else serror(3, line_no, name);
+				if(!type->fun) serror(3, line_no, name);
+				else if(!tmp->type->fun || tmp->type->dec && type->dec) serror(4, line_no, name);
+				else if(neqFunc(tmp->type, type)) serror(19, line_no, name);
+				else {
+					tmp->type->dec |= type->dec;
+					return;
+				}
 			} else break;
 		};
 		return;
@@ -77,9 +82,36 @@ void addSymbol(char * name, SymbolType * type, int line_no, int lv) {
 	SymbolTable * tmp = newp(SymbolTable);
 	tmp->lv = lv;
 	tmp->type = type;
+	tmp->line_no = line_no;
 	str_cpy(tmp->name, name);
 	list_add_after(&symbol_table[h], &tmp->list);
 	list_add_after(&lv_table[lv], &tmp->lv_list);
+}
+
+bool neqFunc(SymbolType * t1, SymbolType * t2) {
+	if(neqType(t1->ret, t2->ret)) return true;
+	ListHead * ptr1, * ptr2 = t2->func.next;
+	list_foreach(ptr1, &t1->func) {
+		if(ptr2 == &t2->func) return true;
+		SymbolType * tmp1 = list_entry(ptr1, Func, list)->type;
+		SymbolType * tmp2 = list_entry(ptr2, Func, list)->type;
+		if(neqType(tmp1, tmp2))return true;
+		ptr2 = ptr2->next;
+	}
+	if(ptr2 != &t2->func) return true;
+	return false;
+
+}
+
+void CheckFunc() {
+	ListHead * ptr;
+	list_foreach(ptr, &lv_table[0]) {
+		SymbolTable * tmp = list_entry(ptr, SymbolTable, lv_list);
+		if(!tmp->type->fun) continue;
+		if(!tmp->type->dec) {
+			serror(18, tmp->line_no, tmp->name);
+		}
+	}
 }
 
 bool neqType(SymbolType * t1, SymbolType * t2) {
@@ -102,7 +134,7 @@ bool neqType(SymbolType * t1, SymbolType * t2) {
 }
 
 SymbolType * FindSymbol(char * name) {
-	printf("find %s\n", name);
+	if(DEBUG) printf("find %s\n", name);
 	unsigned int h = hash(name);
 	while(!list_empty(&symbol_table[h])) {
 		SymbolTable * tmp = list_entry(symbol_table[h].next, SymbolTable, list);
@@ -115,7 +147,7 @@ SymbolType * FindSymbol(char * name) {
 }
 
 SymbolType * FindStructFiled(SymbolType * type, char * name, int line_no) {
-	printf("findfiled\n");
+	if(DEBUG) printf("findfiled\n");
 	if(type->type != STRUCT_TYPE) {
 		serror(13, line_no, "dot");
 		return NULL;

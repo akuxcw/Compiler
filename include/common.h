@@ -5,6 +5,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+//#define DEBUG 1
+#define DEBUG 0
 #define str_cpy(s1, s2); s1 = (char *)malloc(sizeof(s2)+8); strcpy(s1, s2);
 #define newp(t) (t *)malloc(sizeof(t))
 

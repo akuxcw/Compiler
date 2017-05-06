@@ -47,6 +47,7 @@ ExtDefList : ExtDef ExtDefList {BuildTree(&$$, "ExtDefList", 2, $1, $2);}
 ExtDef : Specifier ExtDecList SEMI {BuildTree(&$$, "ExtDef", 3, $1, $2, $3);}
 | Specifier SEMI {BuildTree(&$$, "ExtDef", 2, $1, $2);}
 | Specifier FunDec CompSt {BuildTree(&$$, "ExtDef", 3, $1, $2, $3);}
+| Specifier FunDec SEMI {BuildTree(&$$, "ExtDef", 3, $1, $2, $3);}
 /*| Specifier ExtDecList %prec MISSING_SEMI {yyerror("Missing ';'");}*/
 /*| Specifier %prec MISSING_SEMI {yyerror("Missing ';'");}*/
 | error SEMI

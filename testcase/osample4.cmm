@@ -1,12 +1,14 @@
-int func()
+int a, b;
+int func(float a)
 {
 int i = 10;
+	a = 1.1;
 return i;
 }
-
+int x;
 int main()
 {
 int i;
-int i, j;
-i = func();
+int i , j = 1.2;
+i = func(1.1);
 }

@@ -30,12 +30,11 @@ struct SymbolType {
 	char * name;
 	int type;
 	bool fun;
-	SymbolType * elm;
-	int size;
-//	ListHead array;
-	ListHead structure;
-	SymbolType * ret;
-	ListHead func;
+	union {
+		struct {SymbolType * elm; int size;};
+		ListHead structure;
+		struct {bool dec; SymbolType * ret; ListHead func;};
+	};
 	ListHead list;
 };
 
@@ -43,6 +42,7 @@ struct SymbolTable {
 	char * name;
 	SymbolType * type;
 	int lv;
+	int line_no;
 	ListHead lv_list;
 	ListHead list;
 };
@@ -53,6 +53,8 @@ SymbolType * getType(char *);
 void addSymbol(char *, SymbolType *, int, int);
 void addType(SymbolType *, int);
 bool neqType(SymbolType *, SymbolType *);
+bool neqFunc(SymbolType *, SymbolType *);
+void CheckFunc();
 SymbolType * FindSymbol(char *);
 SymbolType * FindStructFiled(SymbolType *, char *, int);
 void delLv(int);

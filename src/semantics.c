@@ -8,34 +8,37 @@ void serror(int err_no, int line_no, const char * str) {
 
 void Program(SyntaxTreeType * node) {
 	if(node == NULL) return;
-	printf("Program %d\n", node->line_no);
+	if(DEBUG) printf("Program %d\n", node->line_no);
 	ExtDefList(node->child);
+	CheckFunc();
 }
 
 void ExtDefList(SyntaxTreeType * node) {
 	if(node == NULL) return;
-	printf("ExtDefList %d\n", node->line_no);
+	if(DEBUG) printf("ExtDefList %d\n", node->line_no);
 	ExtDef(node->child);
 	ExtDefList(node->child->next);
 }
 
 void ExtDef(SyntaxTreeType * node) {
 	if(node == NULL) return;
-	printf("ExtDef %d\n", node->line_no);
+	if(DEBUG) printf("ExtDef %d\n", node->line_no);
 	SymbolType * type = Specifier(node->child);
 	if(type == NULL) return;
 	if(!strcmp(node->child->next->name, "ExtDecList")) {
 		ExtDecList(node->child->next, type);
 	}
 	if(!strcmp(node->child->next->name, "FunDec")) {
-		FunDec(node->child->next, type);
-		CompSt(node->child->next->next, type, 1);
+		if(!strcmp(node->child->next->next->name, "CompSt")) {
+			FunDec(node->child->next, type, 1);
+			CompSt(node->child->next->next, type, 1);
+		} else FunDec(node->child->next, type, 0);
 	}
 }
 
 SymbolType * Specifier(SyntaxTreeType * node) {
 	if(node == NULL) return NULL;
-	printf("Specifier %d\n", node->line_no);
+	if(DEBUG) printf("Specifier %d\n", node->line_no);
 	if(!strcmp(node->child->name, "TYPE")) {
 		if(!strcmp(node->child->str_val, "int")) {
 			return int_type;
@@ -49,7 +52,7 @@ SymbolType * Specifier(SyntaxTreeType * node) {
 
 SymbolType * StructSpecifier(SyntaxTreeType * node) {
 	if(node == NULL) return NULL;
-	printf("StructSpecifier %d\n", node->line_no);
+	if(DEBUG) printf("StructSpecifier %d\n", node->line_no);
 	if(!strcmp(node->child->next->name, "Tag")) {
 		SymbolType * tmp = getType(str_cat("struct ", node->child->next->child->str_val));
 		if(tmp == NULL) {
@@ -129,7 +132,7 @@ SymbolType * StructSpecifier(SyntaxTreeType * node) {
 
 void ExtDecList(SyntaxTreeType * node, SymbolType * type) {
 	if(node == NULL) return;
-	printf("ExtDecList %d\n", node->line_no);
+	if(DEBUG) printf("ExtDecList %d\n", node->line_no);
 	while(node != NULL) {
 		VarDec(node->child, type, 0);
 		if(node->child->next != NULL) {
@@ -140,10 +143,10 @@ void ExtDecList(SyntaxTreeType * node, SymbolType * type) {
 
 void VarDec(SyntaxTreeType * node, SymbolType * type, int lv) {
 	if(node == NULL) return;
-	printf("VarDec %d\n", node->line_no);
+	if(DEBUG) printf("VarDec %d\n", node->line_no);
 	if(type == NULL) return;
 	SymbolType * exptype = NULL;
-	if(node->next != NULL) {
+	if(node->next != NULL && !strcmp(node->next->name, "ASSIGNOP")) {
 		exptype = Exp(node->next->next);
 	}
 	SymbolType * t = type;
@@ -169,12 +172,13 @@ void VarDec(SyntaxTreeType * node, SymbolType * type, int lv) {
 }
 
 
-void FunDec(SyntaxTreeType * node, SymbolType * type) {
+void FunDec(SyntaxTreeType * node, SymbolType * type, int dec) {
 	if(node == NULL) return;
-	printf("FunDec %d\n", node->line_no);
+	if(DEBUG) printf("FunDec %d\n", node->line_no);
 	SymbolType * t = newp(SymbolType);
 	t->ret = type;
 	t->fun = true;
+	t->dec = dec;
 	list_init(&t->func);
 	if(!strcmp(node->child->next->next->name, "VarList")) {
 		SyntaxTreeType * varlist = node->child->next->next;
@@ -183,7 +187,7 @@ void FunDec(SyntaxTreeType * node, SymbolType * type) {
 			Func * f = newp(Func);
 			f->type = Specifier(varlist->child->child);
 			SyntaxTreeType * vardec = varlist->child->child->next;
-			VarDec(vardec, f->type, 1);
+			if(dec) VarDec(vardec, f->type, 1);
 //			bool ferr = false;
 			while(strcmp(vardec->child->name, "ID")) {
 				SymbolType * arr = newp(SymbolType);
@@ -208,7 +212,7 @@ void FunDec(SyntaxTreeType * node, SymbolType * type) {
 
 void CompSt(SyntaxTreeType * node, SymbolType * return_type, int lv) {
 	if(node == NULL) return;
-	printf("CompSt %d\n", node->line_no);
+	if(DEBUG) printf("CompSt %d\n", node->line_no);
 	if(!strcmp(node->child->next->name, "DefList")) {
 		DefList(node->child->next, lv);
 		if(!strcmp(node->child->next->next->name, "StmtList")) 
@@ -220,14 +224,14 @@ void CompSt(SyntaxTreeType * node, SymbolType * return_type, int lv) {
 
 void DefList(SyntaxTreeType * node, int lv) {
 	if(node == NULL) return;
-	printf("DefList %d\n", node->line_no);
+	if(DEBUG) printf("DefList %d\n", node->line_no);
 	Def(node->child, lv);
 	DefList(node->child->next, lv);
 }
 
 void Def(SyntaxTreeType * node, int lv) {
 	if(node == NULL) return;
-	printf("Def %d\n", node->line_no);
+	if(DEBUG) printf("Def %d\n", node->line_no);
 	SymbolType * type = Specifier(node->child);
 	if(type == NULL) return;
 	DecList(node->child->next, type, lv);
@@ -235,7 +239,7 @@ void Def(SyntaxTreeType * node, int lv) {
 
 void DecList(SyntaxTreeType * node, SymbolType * type, int lv) {
 	if(node == NULL) return;
-	printf("DecList %d %s\n", node->line_no, node->name);
+	if(DEBUG) printf("DecList %d %s\n", node->line_no, node->name);
 	while(node != NULL) {
 		VarDec(node->child->child, type, lv);
 		if(node->child->next != NULL) {
@@ -246,14 +250,14 @@ void DecList(SyntaxTreeType * node, SymbolType * type, int lv) {
 
 void StmtList(SyntaxTreeType * node, SymbolType * return_type, int lv) {
 	if(node == NULL) return;
-	printf("StmtList %d\n", node->line_no);
+	if(DEBUG) printf("StmtList %d\n", node->line_no);
 	Stmt(node->child, return_type, lv);
 	StmtList(node->child->next, return_type, lv);
 }
 
 void Stmt(SyntaxTreeType * node, SymbolType * return_type, int lv) {
 	if(node == NULL) return;
-	printf("Stmt %d %s\n", node->line_no, node->name);
+	if(DEBUG) printf("Stmt %d %s\n", node->line_no, node->name);
 	if(!strcmp(node->child->name, "Exp")) {
 		Exp(node->child);
 	} else if(!strcmp(node->child->name, "CompSt")) {
@@ -278,7 +282,7 @@ void Stmt(SyntaxTreeType * node, SymbolType * return_type, int lv) {
 
 SymbolType * Exp(SyntaxTreeType * node) {
 	if(node == NULL) return NULL;
-	printf("Exp %d %s\n", node->line_no, node->name);
+	if(DEBUG) printf("Exp %d %s\n", node->line_no, node->name);
 	if(!strcmp(node->child->name, "Exp")) {
 		SymbolType * type1 = Exp(node->child), * type2 = NULL;
 		if(!strcmp(node->child->next->next->name, "Exp")) {
@@ -347,7 +351,6 @@ SymbolType * Exp(SyntaxTreeType * node) {
 				serror(11, node->line_no, "nonfun");
 				return NULL;
 			}
-//			printf("!!! %s\n", node->child->str_val);
 			Args(node->child->next->next, type);
 			return type->ret;
 		}
@@ -364,7 +367,7 @@ SymbolType * Exp(SyntaxTreeType * node) {
 
 void Args(SyntaxTreeType * node, SymbolType * type) {
 	if(node == NULL) return;
-	printf("Args %d %s\n", node->line_no, node->name);
+	if(DEBUG) printf("Args %d %s\n", node->line_no, node->name);
 	if(strcmp(node->name, "Args")) {
 		if(list_empty(&type->func)) return;
 		serror(9, node->line_no, "num");
@@ -381,7 +384,6 @@ void Args(SyntaxTreeType * node, SymbolType * type) {
 			}
 			SymbolType * tmp1 = list_entry(ptr, Func, list)->type;
 			SymbolType * tmp2 = Exp(node->child);
-			assert(tmp1->type == INT_TYPE);
 			if(neqType(tmp1, tmp2)) {
 				serror(9, node->line_no, "type");
 				return;
