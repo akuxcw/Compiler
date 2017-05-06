@@ -1,9 +1,7 @@
 #ifndef COMPILER_SYNTAX_TREE_H_
 #define COMPILER_SYNTAX_TREE_H_
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdio.h>
+#include "common.h"
+
 enum {TERMINAL, NONTERMINAL};
 typedef struct SyntaxTreeType {
 	int line_no, type; 	//type = 0 terminal symbol, type=1 nonterminal symbol
@@ -13,7 +11,7 @@ typedef struct SyntaxTreeType {
 		float float_val;
 		char * str_val;
 	};
-	struct SyntaxTreeType *child, *next;
+	struct SyntaxTreeType *child, *next, *prev;
 } SyntaxTreeType;
 
 void BuildTree(SyntaxTreeType **, const char *, int, ...);

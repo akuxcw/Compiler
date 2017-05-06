@@ -49,10 +49,10 @@ $(YFC): $(YFILE)
 
 file	:= test.cmm
 
-test:
+test: $(PARSER)
 	./$(PARSER) < testcase/$(file)
 clean:
-	rm -rf obj/*
+	rm -rf obj/*.*
 
 submit: clean
 	cd .. && zip -r 141220012_lab1.zip $(shell pwd | grep -o '[^/]*$$')

@@ -42,6 +42,10 @@ float toFloat(const char * str) {
 	float val = 0;
 	while(++ i < strlen(str)) {
 		if(str[i] == '.') {
+			if(i == 0) {
+				lerror("Illegal float number");
+				return 0;
+			}
 			float div = 10.0;
 			while(++i < strlen(str)) {
 				if(toupper(str[i]) == 'E') {
@@ -52,15 +56,32 @@ float toFloat(const char * str) {
 						i ++;
 					}
 					while(++ i < strlen(str)) {
-						e = e * 10 + str[i] - '0';
+						if(str[i] >= '0' && str[i] <= '9')
+							e = e * 10 + str[i] - '0';
+						else {
+							lerror("Illegal float number");
+							return 0;
+						}
 					}
 					while(e --) if(flag) val /= 10;else val *= 10;
 				} else {
-					val = val + (float)(str[i] - '0') / div;
-					div *= 10;
+					if(str[i] >= '0' && str[i] <= '9') {
+						val = val + (float)(str[i] - '0') / div;
+						div *= 10;
+					} else {
+						lerror("Illegal float number");
+						return 0;
+					}
 				}
 			}
-		} else val = val * 10 + str[i] - '0';
+		} else {
+			if(str[i] >= '0' && str[i] <= '9')
+				val = val * 10 + str[i] - '0';
+			else {
+				lerror("Illegal float number");
+				return 0;
+			}
+		}
 	}
 	return val;
 }
@@ -83,6 +104,7 @@ void BuildTree(SyntaxTreeType ** node, const char * name, int carg, ...) {
 			SyntaxTreeType * tmp = root->child;
 			while(tmp->next != NULL) tmp = tmp->next;
 			tmp->next = child;
+			if(child != NULL)child->prev = tmp;
 		}
 	}
 	va_end(ap);

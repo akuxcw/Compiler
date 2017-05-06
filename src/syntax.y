@@ -14,7 +14,9 @@ int error_state;
  TYPE STRUCT RETURN IF ELSE WHILE
  LP RP LB RB LC RC
  ID 
-/* LOWER_THAN_LP MISSING_RP MISSING_RB MISSING_RC LOWER_THAN_ALL LOWER_THAN_ELSE*/
+
+%nonassoc MISSING_SEMI
+%nonassoc SEMI
 
 %nonassoc LOWER_THAN_LP MISSING_RP MISSING_RB MISSING_RC
 %nonassoc LOWER_THAN_ALL
@@ -25,16 +27,12 @@ int error_state;
 %left STAR DIV
 %right NOT
 %left LP RP LB RB DOT
-%nonassoc COMMA RC
-/*%type<TreeNode> Program ExtDefList ExtDef ExtDecList Specifier 
- StructSpecifier OptTag Tag VarDec FunDec VarList ParamDec 
- CompSt StmtList Stmt DefList Def DecList Dec Exp Args
-*/
+%nonassoc COMMA RC  
+%nonassoc EMPTY
+%nonassoc TYPE STRUCT INT FLOAT RETURN IF WHILE LC ID error
+
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
-
-%nonassoc MISSING_SEMI
-%nonassoc SEMI
 
 %%
 /* High-level Definations */
@@ -44,14 +42,14 @@ Program : ExtDefList {
 }
 ;
 ExtDefList : ExtDef ExtDefList {BuildTree(&$$, "ExtDefList", 2, $1, $2);}
-| {$$ = NULL;}
+| %prec EMPTY{$$ = NULL;}
 ;
 ExtDef : Specifier ExtDecList SEMI {BuildTree(&$$, "ExtDef", 3, $1, $2, $3);}
 | Specifier SEMI {BuildTree(&$$, "ExtDef", 2, $1, $2);}
 | Specifier FunDec CompSt {BuildTree(&$$, "ExtDef", 3, $1, $2, $3);}
 | Specifier ExtDecList %prec MISSING_SEMI {yyerror("Missing ';'");}
 | Specifier %prec MISSING_SEMI {yyerror("Missing ';'");}
-| Error_state
+| error SEMI
 ;
 ExtDecList : VarDec {BuildTree(&$$, "ExtDecList", 1, $1);}
 | VarDec COMMA ExtDecList {BuildTree(&$$, "ExtDecList", 3, $1, $2, $3);}
@@ -63,6 +61,7 @@ Specifier : TYPE {BuildTree(&$$, "Specifier", 1, $1);}
 StructSpecifier : STRUCT OptTag LC DefList RC {BuildTree(&$$, "StructSpecifier", 5, $1, $2, $3, $4, $5);}
 /*error*/| STRUCT OptTag LC DefList %prec MISSING_RC {yyerror("Missing '}'");}
 | STRUCT Tag {BuildTree(&$$, "StructSpecifier", 2, $1, $2);}
+| error RC
 ;
 OptTag : ID {BuildTree(&$$, "OptTag", 1, $1);}
 | {$$ = NULL;}
@@ -87,7 +86,7 @@ CompSt : LC DefList StmtList RC {BuildTree(&$$, "CompSt", 4, $1, $2, $3, $4);}
 /*error*/| LC DefList StmtList %prec MISSING_RC {yyerror("Missing '}'");}
 ;
 StmtList : Stmt StmtList {BuildTree(&$$, "StmtList", 2, $1, $2);}
-| {$$ = NULL;}
+| %prec EMPTY {$$ = NULL;}
 ;
 Stmt : Exp SEMI {BuildTree(&$$, "Stmt", 2, $1, $2);}
 /*error*/| Exp %prec MISSING_SEMI {yyerror("Missing ';'");}
@@ -97,14 +96,15 @@ Stmt : Exp SEMI {BuildTree(&$$, "Stmt", 2, $1, $2);}
 | IF LP Exp RP Stmt %prec LOWER_THAN_ELSE {BuildTree(&$$, "Stmt", 5, $1, $2, $3, $4, $5);}
 | IF LP Exp RP Stmt ELSE Stmt {BuildTree(&$$, "Stmt", 7, $1, $2, $3, $4, $5, $6, $7);}
 | WHILE LP Exp RP Stmt {BuildTree(&$$, "Stmt", 5, $1, $2, $3, $4, $5);}
-| Error_state
+| error SEMI
 ;
 /* Local Definitions */
 DefList : Def DefList {BuildTree(&$$, "DefList", 2, $1, $2);}
-| {$$ = NULL;}
+| %prec EMPTY {$$ = NULL;}
 ;
 Def : Specifier DecList SEMI {BuildTree(&$$, "Def", 3, $1, $2, $3);}
 /*error*/| Specifier DecList %prec MISSING_SEMI {yyerror("Missing ';'");}
+| error SEMI
 ;
 DecList : Dec {BuildTree(&$$, "DecList", 1, $1);}
 | Dec COMMA DecList {BuildTree(&$$, "DecList", 3, $1, $2, $3);}
@@ -134,12 +134,10 @@ Exp : Exp ASSIGNOP Exp {BuildTree(&$$, "Exp", 3, $1, $2, $3);}
 | ID %prec LOWER_THAN_LP {BuildTree(&$$, "Exp", 1, $1);}
 | INT {BuildTree(&$$, "Exp", 1, $1);}
 | FLOAT {BuildTree(&$$, "Exp", 1, $1);}
+| error RP
 ;
 Args : Exp COMMA Args {BuildTree(&$$, "Args", 3, $1, $2, $3);}
 | Exp %prec LOWER_THAN_ALL{BuildTree(&$$, "Args", 1, $1);}
-;
-Error_state : error SEMI
-| error RP
 ;
 %%
 int yyerror(const char* msg) {

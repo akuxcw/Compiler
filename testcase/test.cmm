@@ -1,18 +1,35 @@
 struct Complex
 {
-	float real, image;
-};
+	float f;
+	struct A{
+	int a, b = 1;
+	}c[12][32];
+} a[2123];
+int a;
+int a(int a, int b){
+	int a = 1;
+}
 
 int main()
 {	
-
-	int x = (1+1);
-	int a[10];
+	float a=234.1e4;
+	int x[123][123] = (1+1);
+	int a[10][10];
 	int y;
-	if(i++) x = 1
+	float z = 1.0;
+	if(i==1){
+	while(a[1] == a[2]) a = (a[1] + 1);
+	} 
 	while(1) {
-	
-	a[1,] = 0;
-	y.image = 1.345E3.3;
+		while(1){
+		}
+	f(a[1], a[2]);
+	a[1].x[1] = 1;
+	a[1][1] = 1;
+	a[1] = 0;
+	y.image = 1.345E3;
 	return 0;
+	}
+	a = a.a * 1;
+	return c0.x-c0.y;
 }

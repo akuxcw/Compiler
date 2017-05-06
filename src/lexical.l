@@ -28,7 +28,7 @@ letter [_a-zA-Z]
 digit [0-9]
 %%
 "//".*$ {/*WORK(NOTE;*/}
-\/\* {
+"/*" {
 	char ch1 = 0, ch2 = input();
 	while (ch2 > 0 && !((ch1 == '*')&&(ch2 == '/'))) {
 		ch1 = ch2;
@@ -37,7 +37,7 @@ digit [0-9]
 //	printf("%s\n", yytext);/*WORK(NOTES;*/
 }
 (([0-9]+{digit}*)|(0(x|X)({digit}|[a-zA-Z])+)) {WORK(INT)}
-{digit}+\.{digit}+([eE][+-]?{digit}+)? {WORK(FLOAT)}
+(\.|{digit})+(\.|{digit})+([eE][+-]?(\.|{digit})+)? {WORK(FLOAT)}
 ; {WORK(SEMI)}
 , {WORK(COMMA)}
 = {WORK(ASSIGNOP)}
@@ -71,15 +71,4 @@ void lerror(const char * str) {
 	printf("Error type A at Line %d: %s\n", lines, str); 
 	error_state = 1;
 }
-/*int main(int argc, char** argv) {
-	if (argc > 1) {
-		if (!(yyin = fopen(argv[1], "r"))) {
-			perror(argv[1]);
-			return 1;
-		}
-	}
-	yylineno = 1;
-	lines = 1;
-	yylex();
-	return 0;
-}*/
+
