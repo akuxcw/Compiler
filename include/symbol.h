@@ -29,7 +29,6 @@ struct Array {
 struct SymbolType {
 	char * name;
 	int type;
-	bool exp;
 	bool fun;
 	SymbolType * elm;
 	int size;
@@ -56,4 +55,6 @@ void addType(SymbolType *, int);
 bool neqType(SymbolType *, SymbolType *);
 SymbolType * FindSymbol(char *);
 SymbolType * FindStructFiled(SymbolType *, char *, int);
+void delLv(int);
+
 #endif // COMPILER_SYMBOL_H_

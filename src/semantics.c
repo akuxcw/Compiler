@@ -215,6 +215,7 @@ void CompSt(SyntaxTreeType * node, SymbolType * return_type, int lv) {
 			StmtList(node->child->next->next, return_type, lv);
 	} if(!strcmp(node->child->next->name, "StmtList")) 
 		StmtList(node->child->next, return_type, lv);
+	delLv(lv);
 }
 
 void DefList(SyntaxTreeType * node, int lv) {
@@ -348,6 +349,7 @@ SymbolType * Exp(SyntaxTreeType * node) {
 			}
 //			printf("!!! %s\n", node->child->str_val);
 			Args(node->child->next->next, type);
+			return type->ret;
 		}
 	} else if(!strcmp(node->child->name, "INT")) {
 		SymbolType * type = newp(SymbolType);

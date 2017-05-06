@@ -24,12 +24,10 @@ void init_symbol() {
 	int_type = newp(SymbolType);
 	str_cpy(int_type->name, "int");
 	int_type->type = INT_TYPE;
-	int_type->exp = true;
 
 	float_type = newp(SymbolType);
 	str_cpy(float_type->name, "float");
 	float_type->type = FLOAT_TYPE;
-	float_type->exp = true;
 //	list_add_after(&type_table, &float_type->list);
 //	list_add_after(&type_table, &int_type->list);
 	SymbolType * int_type = newp(SymbolType);
@@ -68,16 +66,20 @@ void addSymbol(char * name, SymbolType * type, int line_no, int lv) {
 	while(!list_empty(&symbol_table[h])) {
 		SymbolTable * tmp = list_entry(symbol_table[h].next, SymbolTable, list);
 		if(!strcmp(tmp->name, name)){
-			if(tmp->type->fun) serror(4, line_no, name);
-			else serror(3, line_no, name);
+			if(tmp->lv == lv) {
+				if(tmp->type->fun) serror(4, line_no, name);
+				else serror(3, line_no, name);
+			} else break;
 		};
 		return;
 		h ++;
 	}
 	SymbolTable * tmp = newp(SymbolTable);
+	tmp->lv = lv;
 	tmp->type = type;
 	str_cpy(tmp->name, name);
-	list_add_before(&symbol_table[h], &tmp->list);
+	list_add_after(&symbol_table[h], &tmp->list);
+	list_add_after(&lv_table[lv], &tmp->lv_list);
 }
 
 bool neqType(SymbolType * t1, SymbolType * t2) {
@@ -125,4 +127,12 @@ SymbolType * FindStructFiled(SymbolType * type, char * name, int line_no) {
 	}
 	serror(14, line_no, "nodef");
 	return NULL;
+}
+
+void delLv(int lv) {
+	while(!list_empty(&lv_table[lv])) {
+		SymbolTable * tmp = list_entry(lv_table[lv].next, SymbolTable, lv_list);
+		list_del(&tmp->list);
+		list_del(&tmp->lv_list);
+	}
 }
