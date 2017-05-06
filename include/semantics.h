@@ -20,5 +20,5 @@ void DecList(SyntaxTreeType *, SymbolType *);
 void StmtList(SyntaxTreeType *, SymbolType *);
 void Stmt(SyntaxTreeType *, SymbolType *);
 SymbolType * Exp(SyntaxTreeType *);
-
+void Args(SyntaxTreeType *, SymbolType *);
 #endif // _COMPILER_SEMANTICS_H_

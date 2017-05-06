@@ -34,6 +34,7 @@ struct SymbolType {
 	int size;
 //	ListHead array;
 	ListHead structure;
+	SymbolType * ret;
 	ListHead func;
 	ListHead list;
 };
@@ -47,7 +48,7 @@ struct SymbolTable {
 void init_symbol();
 SymbolType * getType(char *);
 void addSymbol(char *, SymbolType *, int);
-void addType(SymbolType *);
+void addType(SymbolType *, int);
 bool neqType(SymbolType *, SymbolType *);
 SymbolType * FindSymbol(char *);
 SymbolType * FindStructFiled(SymbolType *, char *, int);

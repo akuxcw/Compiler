@@ -20,26 +20,29 @@ void init_symbol() {
 	int_type = newp(SymbolType);
 	str_cpy(int_type->name, "int");
 	int_type->type = INT_TYPE;
+	int_type->exp = true;
 
 	float_type = newp(SymbolType);
 	str_cpy(float_type->name, "float");
 	float_type->type = FLOAT_TYPE;
+	float_type->exp = true;
 //	list_add_after(&type_table, &float_type->list);
 //	list_add_after(&type_table, &int_type->list);
 	SymbolType * int_type = newp(SymbolType);
 }
 
-void addType(SymbolType * ntype) {
+void addType(SymbolType * ntype, int line_no) {
+	printf("addtype\n");
 	SymbolType * type = getType(ntype->name);
 	if(type != NULL) {
-//		serror(16)
+		serror(16, line_no, "redef");
 		return;
 	}
 	list_add_before(&type_table, &ntype->list);
 }
 
 SymbolType * getType(char * name) {
-	printf("gettype\n");
+	printf("gettype %s\n", name);
 	ListHead * ptr;
 	list_foreach(ptr, &type_table) {
 		SymbolType * tmp = list_entry(ptr, SymbolType, list);
@@ -53,7 +56,8 @@ void addSymbol(char * name, SymbolType * type, int line_no) {
 	unsigned int h = hash(name);
 	while(symbol_table[h] != NULL) {
 		if(!strcmp(symbol_table[h]->name, name)){
-			serror(3, line_no, name);
+			if(symbol_table[h]->type->fun) serror(4, line_no, name);
+			else serror(3, line_no, name);
 		};
 		return;
 		h ++;
@@ -69,7 +73,17 @@ bool neqType(SymbolType * t1, SymbolType * t2) {
 	if(t1->type == ARRAY_TYPE) {
 		return neqType(t1->elm, t2->elm);
 	}
-	return strcmp(t1->name, t2->name);
+	if(t1->name != NULL && t2->name != NULL && !strcmp(t1->name, t2->name))return false;
+	ListHead * ptr1, * ptr2 = t2->structure.next;
+	list_foreach(ptr1, &t1->structure) {
+		if(ptr2 == &t2->structure) return true;
+		SymbolType * tmp1 = list_entry(ptr1, Struct, list)->type;
+		SymbolType * tmp2 = list_entry(ptr2, Struct, list)->type;
+		if(neqType(tmp1, tmp2))return true;
+		ptr2 = ptr2->next;
+	}
+	if(ptr2 != &t2->structure) return true;
+	return false;
 }
 
 SymbolType * FindSymbol(char * name) {
@@ -77,9 +91,7 @@ SymbolType * FindSymbol(char * name) {
 	unsigned int h = hash(name);
 	while(symbol_table[h] != NULL) {
 		if(!strcmp(symbol_table[h]->name, name)) {
-			SymbolType * type = newp(SymbolType);
-			memcpy(type, symbol_table[h]->type, sizeof(SymbolType));
-			return type;
+			return symbol_table[h]->type;
 		}
 		h ++;
 	}

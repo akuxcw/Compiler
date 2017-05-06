@@ -23,7 +23,7 @@ void ExtDef(SyntaxTreeType * node) {
 	if(node == NULL) return;
 	printf("ExtDef %d\n", node->line_no);
 	SymbolType * type = Specifier(node->child);
-	addType(type);
+	if(type == NULL) return;
 	if(!strcmp(node->child->next->name, "ExtDecList")) {
 		ExtDecList(node->child->next, type);
 	}
@@ -51,22 +51,35 @@ SymbolType * StructSpecifier(SyntaxTreeType * node) {
 	if(node == NULL) return NULL;
 	printf("StructSpecifier %d\n", node->line_no);
 	if(!strcmp(node->child->next->name, "Tag")) {
-		return getType(node->child->next->child->str_val);
+		SymbolType * tmp = getType(str_cat("struct ", node->child->next->child->str_val));
+		if(tmp == NULL) {
+			serror(17, node->line_no, node->child->next->child->str_val);
+		}
+		return tmp;
 	} else {
 		SymbolType * type = newp(SymbolType);
 		type->type = STRUCT_TYPE;
 		list_init(&type->structure);
 		SyntaxTreeType * opttag = node->child->next;
-		if(opttag != NULL) {
+		SyntaxTreeType * deflist;
+		if(!strcmp(opttag->name, "OptTag")) {
 			str_cpy(type->name, str_cat("struct ", opttag->child->str_val));
+			deflist = node->child->next->next->next;
+		} else {
+			deflist = node->child->next->next;
 		}
-		SyntaxTreeType * deflist = node->child->next->next->next;
+		if(!strcmp(deflist->name, "RC")) deflist = NULL;
 //return NULL;
 		while(deflist != NULL) {
 			Struct * s = newp(Struct);
 			s->type = Specifier(deflist->child->child);
-			SymbolType * stype = newp(SymbolType);
-			memcpy(stype, s->type, sizeof(SymbolType));	
+			if(s->type == NULL) {
+				if(deflist->child->next != NULL) {
+					deflist = deflist->child->next;
+				} else break;
+				continue;
+			}
+			SymbolType * stype = s->type;	
 			SyntaxTreeType * declist = deflist->child->child->next;
 			while(declist != NULL) {
 				SyntaxTreeType * vardec = declist->child->child;
@@ -109,6 +122,7 @@ SymbolType * StructSpecifier(SyntaxTreeType * node) {
 				deflist = deflist->child->next;
 			} else break;
 		}
+		if(type->name != NULL)addType(type, node->line_no);
 		return type;
 	}
 }
@@ -127,6 +141,7 @@ void ExtDecList(SyntaxTreeType * node, SymbolType * type) {
 void VarDec(SyntaxTreeType * node, SymbolType * type) {
 	if(node == NULL) return;
 	printf("VarDec %d\n", node->line_no);
+	if(type == NULL) return;
 	SymbolType * exptype = NULL;
 	if(node->next != NULL) {
 		exptype = Exp(node->next->next);
@@ -158,14 +173,14 @@ void FunDec(SyntaxTreeType * node, SymbolType * type) {
 	if(node == NULL) return;
 	printf("FunDec %d\n", node->line_no);
 	SymbolType * t = newp(SymbolType);
-	memcpy(t, type, sizeof(SymbolType));
+	t->ret = type;
 	t->fun = true;
 	list_init(&t->func);
 	if(!strcmp(node->child->next->next->name, "VarList")) {
 		SyntaxTreeType * varlist = node->child->next->next;
 //return NULL;
-		Func * f = newp(Func);
 		while(varlist != NULL) {
+			Func * f = newp(Func);
 			f->type = Specifier(varlist->child->child);
 			SyntaxTreeType * vardec = varlist->child->child->next;
 			VarDec(vardec, f->type);
@@ -180,6 +195,8 @@ void FunDec(SyntaxTreeType * node, SymbolType * type) {
 			}
 			str_cpy(f->name, vardec->child->str_val);
 			list_add_before(&t->func, &f->list);
+			ListHead * ptr;
+			list_foreach(ptr, &t->func);
 			if(varlist->child->next != NULL) {
 				varlist = varlist->child->next->next;
 			} else break;
@@ -211,7 +228,7 @@ void Def(SyntaxTreeType * node) {
 	if(node == NULL) return;
 	printf("Def %d\n", node->line_no);
 	SymbolType * type = Specifier(node->child);
-	addType(type);
+	if(type == NULL) return;
 	DecList(node->child->next, type);
 }
 
@@ -247,7 +264,7 @@ void Stmt(SyntaxTreeType * node, SymbolType * return_type) {
 		}
 	} else if(!strcmp(node->child->name, "IF") || !strcmp(node->child->name, "WHILE")) {
 		SymbolType * type = Exp(node->child->next->next);
-		if(type == NULL || type->type != INT_TYPE) {
+		if(type != NULL && type->type != INT_TYPE) {
 			serror(7, node->line_no, "if");
 		}
 		SyntaxTreeType * tnode = node->child->next->next->next->next;
@@ -270,9 +287,12 @@ SymbolType * Exp(SyntaxTreeType * node) {
 		if(type1 == NULL) return NULL;
 		char * s = node->child->next->name;
 		if(!strcmp(s, "ASSIGNOP")) {
-			if(neqType(type1, type2) || type1->exp) {
-				printf("%d\n", type1->exp);
-				serror(5, node->line_no, "exp");
+			if(type1->exp) {
+				serror(6, node->line_no, "exp");
+				return NULL;
+			}
+			if(neqType(type1, type2)) {
+				serror(5, node->line_no, "noneq");
 				return NULL;
 			}
 			return type2;
@@ -316,9 +336,21 @@ SymbolType * Exp(SyntaxTreeType * node) {
 	} else if(!strcmp(node->child->name, "ID")) {
 		SymbolType * type = FindSymbol(node->child->str_val);
 		if(node->child->next == NULL) {
+			if(type == NULL) {
+				serror(1, node->line_no, "nondef");
+			}
 			return type;
 		} else {
-//			Args(node->child->next->next, type);
+			if(type == NULL) {
+				serror(2, node->line_no, "nondef");
+				return NULL;
+			}
+			if(!type->fun) {
+				serror(11, node->line_no, "nonfun");
+				return NULL;
+			}
+//			printf("!!! %s\n", node->child->str_val);
+			Args(node->child->next->next, type);
 		}
 	} else if(!strcmp(node->child->name, "INT")) {
 		SymbolType * type = newp(SymbolType);
@@ -329,9 +361,40 @@ SymbolType * Exp(SyntaxTreeType * node) {
 		memcpy(type, float_type, sizeof(SymbolType));
 		return type;
 	}
-
 }
 
-
+void Args(SyntaxTreeType * node, SymbolType * type) {
+	if(node == NULL) return;
+	printf("Args %d %s\n", node->line_no, node->name);
+	if(strcmp(node->name, "Args")) {
+		if(list_empty(&type->func)) return;
+		serror(9, node->line_no, "num");
+	} else {
+		ListHead * ptr = &type->func;
+		list_foreach(ptr, &type->func){
+		}
+		
+		while(node != NULL) {
+			ptr = ptr->next;
+			if(ptr == &type->func) {
+				serror(9, node->line_no, "num");
+				return;
+			}
+			SymbolType * tmp1 = list_entry(ptr, Func, list)->type;
+			SymbolType * tmp2 = Exp(node->child);
+			assert(tmp1->type == INT_TYPE);
+			if(neqType(tmp1, tmp2)) {
+				serror(9, node->line_no, "type");
+				return;
+			}
+			if(node->child->next != NULL) {
+				node = node->child->next->next;
+			} else break;
+		}
+		if(ptr->next != &type->func) {
+			serror(9, node->line_no, "num");
+		}
+	}
+}
 
 
