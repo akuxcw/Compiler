@@ -17,5 +17,8 @@ void CompSt(SyntaxTreeType *);
 void DefList(SyntaxTreeType *);
 void Def(SyntaxTreeType *);
 void DecList(SyntaxTreeType *, SymbolType *);
+void StmtList(SyntaxTreeType *);
+void Stmt(SyntaxTreeType *);
+SymbolType * Exp(SyntaxTreeType *);
 
 #endif // _COMPILER_SEMANTICS_H_

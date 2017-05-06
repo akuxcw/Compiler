@@ -30,6 +30,6 @@ int main()
 	y.image = 1.345E3;
 	return 0;
 	}
-	a = a.a * 1;
+	y + 1 = y && 11;
 	return c0.x-c0.y;
 }

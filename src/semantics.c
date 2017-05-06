@@ -54,6 +54,7 @@ SymbolType * StructSpecifier(SyntaxTreeType * node) {
 		return getType(node->child->next->child->str_val);
 	} else {
 		SymbolType * type = newp(SymbolType);
+		type->type = STRUCT_TYPE;
 		list_init(&type->array);
 		list_init(&type->structure);
 		SyntaxTreeType * opttag = node->child->next;
@@ -82,6 +83,7 @@ SymbolType * StructSpecifier(SyntaxTreeType * node) {
 					s->type = newp(SymbolType);
 					memcpy(s->type, stype, sizeof(SymbolType));
 					list_add_after(&s->type->array, &arr->list);
+					s->type->type = ARRAY_TYPE;
 					vardec = vardec->child;
 				}
 				ListHead * ptr;
@@ -140,6 +142,7 @@ void VarDec(SyntaxTreeType * node, SymbolType * type) {
 		}
 		Array * arr = newp(Array);
 		list_add_after(&t->array, &arr->list);
+		t->type = ARRAY_TYPE;
 		arr->size = node->child->next->next->int_val;
 		node = node->child;
 	}
@@ -165,6 +168,7 @@ void FunDec(SyntaxTreeType * node, SymbolType * type) {
 		while(varlist != NULL) {
 			f->type = Specifier(varlist->child->child);
 			SyntaxTreeType * vardec = varlist->child->child->next;
+			VarDec(vardec, f->type);
 //			bool ferr = false;
 			while(strcmp(vardec->child->name, "ID")) {
 				Array * arr = newp(Array);
@@ -201,7 +205,7 @@ void CompSt(SyntaxTreeType * node) {
 	if(node == NULL) return;
 	printf("CompSt %d\n", node->line_no);
 	DefList(node->child->next);
-//	StmtList(node->child->next->next);
+	if(!strcmp(node->child->next->next->name, "StmtList")) StmtList(node->child->next->next);
 }
 
 void DefList(SyntaxTreeType * node) {
@@ -228,6 +232,93 @@ void DecList(SyntaxTreeType * node, SymbolType * type) {
 			node = node->child->next->next;
 		} else break;
 	}
+}
+
+void StmtList(SyntaxTreeType * node) {
+	if(node == NULL) return;
+	printf("StmtList %d\n", node->line_no);
+	Stmt(node->child);
+	StmtList(node->child->next);
+}
+
+void Stmt(SyntaxTreeType * node) {
+	if(node == NULL) return;
+	printf("Stmt %d %s\n", node->line_no, node->name);
+	if(!strcmp(node->child->name, "Exp")) {
+		Exp(node->child);
+	} else if(!strcmp(node->child->name, "CompSt")) {
+		CompSt(node->child);
+	} else if(!strcmp(node->child->name, "RETURN")) {
+	
+	} else if(!strcmp(node->child->name, "IF")) {
+	
+	} else if(!strcmp(node->child->name, "WHILE")) {
+	
+	}
+
+}
+
+SymbolType * Exp(SyntaxTreeType * node) {
+	if(node == NULL) return NULL;
+	printf("Exp %d %s\n", node->line_no, node->name);
+	if(!strcmp(node->child->name, "Exp")) {
+		SymbolType * type1 = Exp(node->child), * type2 = NULL;
+		if(!strcmp(node->child->next->next->name, "Exp")) {
+			type2 = Exp(node->child->next->next);
+		}
+		char * s = node->child->next->name;
+		if(!strcmp(s, "ASSIGNOP")) {
+			if(type1->exp || neqType(type1, type2)) {
+				serror(5, node->line_no, "exp");
+			}
+			return type2;
+		} else if(!strcmp(s, "AND") || !strcmp(s, "OR") || !strcmp(s, "RELOP")) {
+			if(type1->type != INT_TYPE || type2->type != INT_TYPE) {
+				serror(7, node->line_no, "relop");
+			}
+			type1->exp = true;
+			return type1;
+		} else if(!strcmp(s, "PLUS") || !strcmp(s, "MINUS") || !strcmp(s, "STAR") || !strcmp(s, "DIV")) {
+			if((type1->type != INT_TYPE && type1->type != FLOAT_TYPE) || (type2->type != INT_TYPE && type2->type != FLOAT_TYPE) || type1->type != type2->type) {
+				serror(7, node->line_no, "plus");
+			}
+			type1->exp = true;
+			return type1;
+		} else if(!strcmp(s, "LB")) {
+			if(type1->type != ARRAY_TYPE) {
+				serror(10, node->line_no, "array");
+			}
+			list_del(type1->array.prev);
+			return type1;
+		} else if(!strcmp(s, "DOT")){
+//			return FindStruct(type1, node->child->next->next->str_val);
+		}
+	} else if(!strcmp(node->child->name, "MINUS") || !strcmp(node->child->name, "LP")) {
+		return Exp(node->child->next);
+	} else if(!strcmp(node->child->name, "NOT")) {
+		SymbolType * type = Exp(node->child->next);
+		if(type->type != INT_TYPE) {
+			serror(7, node->line_no, "not");
+		}
+		type->exp = true;
+		return type;
+	} else if(!strcmp(node->child->name, "ID")) {
+		SymbolType * type = FindSymbol(node->child->str_val);
+		if(node->child->next == NULL) {
+			return type;
+		} else {
+//			Args(node->child->next->next, type);
+		}
+	} else if(!strcmp(node->child->name, "INT")) {
+		SymbolType * type = newp(SymbolType);
+		memcpy(type, int_type, sizeof(SymbolType));
+		return type;
+	} else if(!strcmp(node->child->name, "FLOAT")) {
+		SymbolType * type = newp(SymbolType);
+		memcpy(type, float_type, sizeof(SymbolType));
+		return type;
+	}
+
 }
 
 

@@ -28,6 +28,7 @@ struct Array {
 struct SymbolType {
 	char * name;
 	int type;
+	bool exp;
 	ListHead array;
 	ListHead structure;
 	ListHead func;
@@ -44,5 +45,6 @@ void init_symbol();
 SymbolType * getType(char *);
 void addSymbol(char *, SymbolType *, int);
 void addType(SymbolType *);
-
+bool neqType(SymbolType *, SymbolType *);
+SymbolType * FindSymbol(char *);
 #endif // COMPILER_SYMBOL_H_

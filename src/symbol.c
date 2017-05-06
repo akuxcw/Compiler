@@ -18,8 +18,10 @@ void init_symbol() {
 	list_init(&type_table);
 	int_type = newp(SymbolType);
 	str_cpy(int_type->name, "int");
+	int_type->type = INT_TYPE;
 	float_type = newp(SymbolType);
 	str_cpy(float_type->name, "float");
+	float_type->type = FLOAT_TYPE;
 //	list_add_after(&type_table, &float_type->list);
 //	list_add_after(&type_table, &int_type->list);
 	SymbolType * int_type = newp(SymbolType);
@@ -58,3 +60,18 @@ void addSymbol(char * name, SymbolType * type, int line_no) {
 	str_cpy(symbol_table[h]->name, name);
 }
 
+bool neqType(SymbolType * t1, SymbolType * t2) {
+	return strcmp(t1->name, t2->name);
+}
+
+SymbolType * FindSymbol(char * name) {
+	unsigned int h = hash(name);
+	while(symbol_table[h] != NULL) {
+		if(!strcmp(symbol_table[h]->name, name)) {
+			SymbolType * type = newp(SymbolType);
+			memcpy(type, symbol_table[h]->type, sizeof(SymbolType));
+			return type;
+		}
+	}
+	return NULL;
+}
