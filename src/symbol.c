@@ -2,7 +2,8 @@
 #include "semantics.h"
 ListHead type_table;
 
-SymbolTable * symbol_table[MAX_SYMBOL];
+ListHead symbol_table[MAX_SYMBOL];
+ListHead lv_table[MAX_LV];
 SymbolType * int_type, * float_type;
 
 static unsigned int hash(char * str) {
@@ -15,8 +16,11 @@ static unsigned int hash(char * str) {
 }
 
 void init_symbol() {
+	int i;
 	list_init(&type_table);
-	
+	for(i = 0; i < MAX_SYMBOL; ++ i) list_init(&symbol_table[i]);
+	for(i = 0; i < MAX_LV; ++ i) list_init(&lv_table[i]);
+
 	int_type = newp(SymbolType);
 	str_cpy(int_type->name, "int");
 	int_type->type = INT_TYPE;
@@ -29,6 +33,13 @@ void init_symbol() {
 //	list_add_after(&type_table, &float_type->list);
 //	list_add_after(&type_table, &int_type->list);
 	SymbolType * int_type = newp(SymbolType);
+}
+
+bool isID(SyntaxTreeType * node) {
+	if(!strcmp(node->name, "ID") && node->next == NULL) return true;
+	if(node->next == NULL) return false;
+	if(!strcmp(node->next->name, "DOT") || !strcmp(node->next->name, "LB")) return true;
+	return false;
 }
 
 void addType(SymbolType * ntype, int line_no) {
@@ -51,20 +62,22 @@ SymbolType * getType(char * name) {
 	return NULL;
 }
 
-void addSymbol(char * name, SymbolType * type, int line_no) {
+void addSymbol(char * name, SymbolType * type, int line_no, int lv) {
 	printf("add %s\n", name);
 	unsigned int h = hash(name);
-	while(symbol_table[h] != NULL) {
-		if(!strcmp(symbol_table[h]->name, name)){
-			if(symbol_table[h]->type->fun) serror(4, line_no, name);
+	while(!list_empty(&symbol_table[h])) {
+		SymbolTable * tmp = list_entry(symbol_table[h].next, SymbolTable, list);
+		if(!strcmp(tmp->name, name)){
+			if(tmp->type->fun) serror(4, line_no, name);
 			else serror(3, line_no, name);
 		};
 		return;
 		h ++;
 	}
-	symbol_table[h] = newp(SymbolTable);
-	symbol_table[h]->type = type;
-	str_cpy(symbol_table[h]->name, name);
+	SymbolTable * tmp = newp(SymbolTable);
+	tmp->type = type;
+	str_cpy(tmp->name, name);
+	list_add_before(&symbol_table[h], &tmp->list);
 }
 
 bool neqType(SymbolType * t1, SymbolType * t2) {
@@ -89,9 +102,10 @@ bool neqType(SymbolType * t1, SymbolType * t2) {
 SymbolType * FindSymbol(char * name) {
 	printf("find %s\n", name);
 	unsigned int h = hash(name);
-	while(symbol_table[h] != NULL) {
-		if(!strcmp(symbol_table[h]->name, name)) {
-			return symbol_table[h]->type;
+	while(!list_empty(&symbol_table[h])) {
+		SymbolTable * tmp = list_entry(symbol_table[h].next, SymbolTable, list);
+		if(!strcmp(tmp->name, name)) {
+			return tmp->type;
 		}
 		h ++;
 	}

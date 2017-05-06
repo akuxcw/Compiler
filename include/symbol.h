@@ -5,6 +5,7 @@
 #include "syntax_tree.h"
 
 #define MAX_SYMBOL 0x3fff
+#define MAX_LV 100
 enum {INT_TYPE, FLOAT_TYPE, ARRAY_TYPE, STRUCT_TYPE, FUNC_TYPE, BASIC_TYPE};
 
 typedef struct SymbolType SymbolType;
@@ -42,12 +43,15 @@ struct SymbolType {
 struct SymbolTable {
 	char * name;
 	SymbolType * type;
+	int lv;
+	ListHead lv_list;
 	ListHead list;
 };
 
 void init_symbol();
+bool isID(SyntaxTreeType *);
 SymbolType * getType(char *);
-void addSymbol(char *, SymbolType *, int);
+void addSymbol(char *, SymbolType *, int, int);
 void addType(SymbolType *, int);
 bool neqType(SymbolType *, SymbolType *);
 SymbolType * FindSymbol(char *);
