@@ -29,7 +29,10 @@ struct SymbolType {
 	char * name;
 	int type;
 	bool exp;
-	ListHead array;
+	bool fun;
+	SymbolType * elm;
+	int size;
+//	ListHead array;
 	ListHead structure;
 	ListHead func;
 	ListHead list;
@@ -47,4 +50,5 @@ void addSymbol(char *, SymbolType *, int);
 void addType(SymbolType *);
 bool neqType(SymbolType *, SymbolType *);
 SymbolType * FindSymbol(char *);
+SymbolType * FindStructFiled(SymbolType *, char *, int);
 #endif // COMPILER_SYMBOL_H_

@@ -5,7 +5,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#define str_cpy(s1, s2); s1 = (char *)malloc(sizeof(s2)); strcpy(s1, s2);
+#define str_cpy(s1, s2); s1 = (char *)malloc(sizeof(s2)+8); strcpy(s1, s2);
 #define newp(t) (t *)malloc(sizeof(t))
 
 typedef char bool;

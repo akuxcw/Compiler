@@ -1,9 +1,6 @@
 struct Complex
 {
 	float f;
-	struct A{
-	int a, b = 1;
-	}c[12][32];
 } a[2123];
 int a;
 int a(int a, int b){
@@ -13,8 +10,8 @@ int a(int a, int b){
 int main()
 {	
 	float a=234.1e4;
-	int x[123][123] = (1+1);
-	int a[10][10];
+	int x[123] = (1+1);
+	int z[10][10];
 	int y;
 	float z = 1.0;
 	if(i==1){
@@ -30,6 +27,8 @@ int main()
 	y.image = 1.345E3;
 	return 0;
 	}
-	y + 1 = y && 11;
+	y = y && 11;
+	x = z[10];
+	a[1].c[1][1].b[1.5] = 1;
 	return c0.x-c0.y;
 }

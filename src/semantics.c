@@ -29,7 +29,7 @@ void ExtDef(SyntaxTreeType * node) {
 	}
 	if(!strcmp(node->child->next->name, "FunDec")) {
 		FunDec(node->child->next, type);
-		CompSt(node->child->next->next);
+		CompSt(node->child->next->next, type);
 	}
 }
 
@@ -55,18 +55,18 @@ SymbolType * StructSpecifier(SyntaxTreeType * node) {
 	} else {
 		SymbolType * type = newp(SymbolType);
 		type->type = STRUCT_TYPE;
-		list_init(&type->array);
 		list_init(&type->structure);
 		SyntaxTreeType * opttag = node->child->next;
 		if(opttag != NULL) {
 			str_cpy(type->name, str_cat("struct ", opttag->child->str_val));
 		}
-		Struct * s = newp(Struct);
 		SyntaxTreeType * deflist = node->child->next->next->next;
 //return NULL;
 		while(deflist != NULL) {
+			Struct * s = newp(Struct);
 			s->type = Specifier(deflist->child->child);
-			SymbolType * stype = s->type;	
+			SymbolType * stype = newp(SymbolType);
+			memcpy(stype, s->type, sizeof(SymbolType));	
 			SyntaxTreeType * declist = deflist->child->child->next;
 			while(declist != NULL) {
 				SyntaxTreeType * vardec = declist->child->child;
@@ -78,12 +78,11 @@ SymbolType * StructSpecifier(SyntaxTreeType * node) {
 					continue;
 				}	
 				while(strcmp(vardec->child->name, "ID")) {
-					Array * arr = newp(Array);
+					SymbolType * arr = newp(SymbolType);
 					arr->size = vardec->child->next->next->int_val;
-					s->type = newp(SymbolType);
-					memcpy(s->type, stype, sizeof(SymbolType));
-					list_add_after(&s->type->array, &arr->list);
-					s->type->type = ARRAY_TYPE;
+					arr->elm = s->type;
+					arr->type = ARRAY_TYPE;
+					s->type = arr;
 					vardec = vardec->child;
 				}
 				ListHead * ptr;
@@ -101,9 +100,8 @@ SymbolType * StructSpecifier(SyntaxTreeType * node) {
 					list_add_before(&type->structure, &s->list);
 				}
 				if(declist->child->next != NULL) {
-					Struct * tmps = newp(Struct);
-					tmps->type = stype;
-					s = tmps;
+					s = newp(Struct);
+					s->type = stype;
 					declist = declist->child->next->next;
 				} else break;
 			}
@@ -131,25 +129,27 @@ void VarDec(SyntaxTreeType * node, SymbolType * type) {
 	printf("VarDec %d\n", node->line_no);
 	SymbolType * exptype = NULL;
 	if(node->next != NULL) {
-//		exptype = Exp(node->next->next);
+		exptype = Exp(node->next->next);
 	}
-	SymbolType * t = newp(SymbolType);
-	memcpy(t, type, sizeof(SymbolType));
+	SymbolType * t = type;
+
 	while(node != NULL) {
 		if(!strcmp(node->child->name, "ID")) {
 			addSymbol(node->child->str_val, t, node->child->line_no);
 			break;
 		}
-		Array * arr = newp(Array);
-		list_add_after(&t->array, &arr->list);
-		t->type = ARRAY_TYPE;
+		SymbolType * arr = newp(SymbolType);
 		arr->size = node->child->next->next->int_val;
+		arr->elm = t;
+		arr->type = ARRAY_TYPE;
+		t = arr;
+
 		node = node->child;
 	}
 	if(exptype != NULL) {
-//		if(neqType(type, exptype)) {
+		if(neqType(type, exptype)) {
 			serror(5, node->line_no, node->child->str_val);
-//		}
+		}
 	}
 }
 
@@ -159,7 +159,7 @@ void FunDec(SyntaxTreeType * node, SymbolType * type) {
 	printf("FunDec %d\n", node->line_no);
 	SymbolType * t = newp(SymbolType);
 	memcpy(t, type, sizeof(SymbolType));
-	t->type = FUNC_TYPE;
+	t->fun = true;
 	list_init(&t->func);
 	if(!strcmp(node->child->next->next->name, "VarList")) {
 		SyntaxTreeType * varlist = node->child->next->next;
@@ -171,25 +171,13 @@ void FunDec(SyntaxTreeType * node, SymbolType * type) {
 			VarDec(vardec, f->type);
 //			bool ferr = false;
 			while(strcmp(vardec->child->name, "ID")) {
-				Array * arr = newp(Array);
+				SymbolType * arr = newp(SymbolType);
 				arr->size = vardec->child->next->next->int_val;
-				SymbolType * tmpt = f->type;
-				f->type = newp(SymbolType);
-				memcpy(f->type, tmpt, sizeof(SymbolType));
-				list_add_after(&f->type->array, &arr->list);
+				arr->elm = f->type;
+				f->type = arr;
+
 				vardec = vardec->child;
 			}
-/*			ListHead * ptr;
-			list_foreach(ptr, &t->func) {
-					Struct * tmps = list_entry(ptr, Struct, list);
-					if(!strcmp(tmps->name, vardec->child->str_val)) {
-						serror(15, vardec->line_no, tmps->name);
-						ferr = true;
-						break;
-					}
-				}
-				if(!ferr) {
-*/
 			str_cpy(f->name, vardec->child->str_val);
 			list_add_before(&t->func, &f->list);
 			if(varlist->child->next != NULL) {
@@ -201,11 +189,15 @@ void FunDec(SyntaxTreeType * node, SymbolType * type) {
 	addSymbol(node->child->str_val, t, node->line_no);
 }
 
-void CompSt(SyntaxTreeType * node) {
+void CompSt(SyntaxTreeType * node, SymbolType * return_type) {
 	if(node == NULL) return;
 	printf("CompSt %d\n", node->line_no);
-	DefList(node->child->next);
-	if(!strcmp(node->child->next->next->name, "StmtList")) StmtList(node->child->next->next);
+	if(!strcmp(node->child->next->name, "DefList")) {
+		DefList(node->child->next);
+		if(!strcmp(node->child->next->next->name, "StmtList")) 
+			StmtList(node->child->next->next, return_type);
+	} if(!strcmp(node->child->next->name, "StmtList")) 
+		StmtList(node->child->next, return_type);
 }
 
 void DefList(SyntaxTreeType * node) {
@@ -234,28 +226,36 @@ void DecList(SyntaxTreeType * node, SymbolType * type) {
 	}
 }
 
-void StmtList(SyntaxTreeType * node) {
+void StmtList(SyntaxTreeType * node, SymbolType * return_type) {
 	if(node == NULL) return;
 	printf("StmtList %d\n", node->line_no);
-	Stmt(node->child);
-	StmtList(node->child->next);
+	Stmt(node->child, return_type);
+	StmtList(node->child->next, return_type);
 }
 
-void Stmt(SyntaxTreeType * node) {
+void Stmt(SyntaxTreeType * node, SymbolType * return_type) {
 	if(node == NULL) return;
 	printf("Stmt %d %s\n", node->line_no, node->name);
 	if(!strcmp(node->child->name, "Exp")) {
 		Exp(node->child);
 	} else if(!strcmp(node->child->name, "CompSt")) {
-		CompSt(node->child);
+		CompSt(node->child, return_type);
 	} else if(!strcmp(node->child->name, "RETURN")) {
-	
-	} else if(!strcmp(node->child->name, "IF")) {
-	
-	} else if(!strcmp(node->child->name, "WHILE")) {
-	
+		SymbolType * type = Exp(node->child->next);
+		if(neqType(return_type, type)) {
+			serror(8, node->line_no, "");
+		}
+	} else if(!strcmp(node->child->name, "IF") || !strcmp(node->child->name, "WHILE")) {
+		SymbolType * type = Exp(node->child->next->next);
+		if(type == NULL || type->type != INT_TYPE) {
+			serror(7, node->line_no, "if");
+		}
+		SyntaxTreeType * tnode = node->child->next->next->next->next;
+		Stmt(tnode, return_type);
+		if(tnode->next != NULL) {
+			Stmt(tnode->next->next, return_type);
+		}
 	}
-
 }
 
 SymbolType * Exp(SyntaxTreeType * node) {
@@ -265,11 +265,15 @@ SymbolType * Exp(SyntaxTreeType * node) {
 		SymbolType * type1 = Exp(node->child), * type2 = NULL;
 		if(!strcmp(node->child->next->next->name, "Exp")) {
 			type2 = Exp(node->child->next->next);
+			if(type2 == NULL) return NULL;
 		}
+		if(type1 == NULL) return NULL;
 		char * s = node->child->next->name;
 		if(!strcmp(s, "ASSIGNOP")) {
-			if(type1->exp || neqType(type1, type2)) {
+			if(neqType(type1, type2) || type1->exp) {
+				printf("%d\n", type1->exp);
 				serror(5, node->line_no, "exp");
+				return NULL;
 			}
 			return type2;
 		} else if(!strcmp(s, "AND") || !strcmp(s, "OR") || !strcmp(s, "RELOP")) {
@@ -281,17 +285,23 @@ SymbolType * Exp(SyntaxTreeType * node) {
 		} else if(!strcmp(s, "PLUS") || !strcmp(s, "MINUS") || !strcmp(s, "STAR") || !strcmp(s, "DIV")) {
 			if((type1->type != INT_TYPE && type1->type != FLOAT_TYPE) || (type2->type != INT_TYPE && type2->type != FLOAT_TYPE) || type1->type != type2->type) {
 				serror(7, node->line_no, "plus");
+				return NULL;
 			}
 			type1->exp = true;
 			return type1;
 		} else if(!strcmp(s, "LB")) {
 			if(type1->type != ARRAY_TYPE) {
 				serror(10, node->line_no, "array");
+				return NULL;
 			}
-			list_del(type1->array.prev);
+			if(type2->type != INT_TYPE) {
+				serror(12, node->line_no, "a");
+				return NULL;
+			}
+			type1 = type1->elm;
 			return type1;
 		} else if(!strcmp(s, "DOT")){
-//			return FindStruct(type1, node->child->next->next->str_val);
+			return FindStructFiled(type1, node->child->next->next->str_val, node->child->next->next->line_no);
 		}
 	} else if(!strcmp(node->child->name, "MINUS") || !strcmp(node->child->name, "LP")) {
 		return Exp(node->child->next);
@@ -299,6 +309,7 @@ SymbolType * Exp(SyntaxTreeType * node) {
 		SymbolType * type = Exp(node->child->next);
 		if(type->type != INT_TYPE) {
 			serror(7, node->line_no, "not");
+			return NULL;
 		}
 		type->exp = true;
 		return type;
@@ -320,5 +331,7 @@ SymbolType * Exp(SyntaxTreeType * node) {
 	}
 
 }
+
+
 
 

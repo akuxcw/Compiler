@@ -6,6 +6,7 @@ CFLAGS 	:= -std=c99
 #CFLAGS	+= -std=gnu11 -m32 -c #编译标准, 目标架构, 只编译
 CFLAGS	+= -I include/
 CFLAGS 	+= -Wimplicit-function-declaration
+#CFLAGS	+= -m32
 
 SRC_DIR	:= src
 OBJ_DIR	:= obj

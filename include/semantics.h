@@ -13,12 +13,12 @@ SymbolType * StructSpecifier(SyntaxTreeType *);
 void ExtDecList(SyntaxTreeType *, SymbolType *);
 void VarDec(SyntaxTreeType *, SymbolType *);
 void FunDec(SyntaxTreeType *, SymbolType *);
-void CompSt(SyntaxTreeType *);
+void CompSt(SyntaxTreeType *, SymbolType *);
 void DefList(SyntaxTreeType *);
 void Def(SyntaxTreeType *);
 void DecList(SyntaxTreeType *, SymbolType *);
-void StmtList(SyntaxTreeType *);
-void Stmt(SyntaxTreeType *);
+void StmtList(SyntaxTreeType *, SymbolType *);
+void Stmt(SyntaxTreeType *, SymbolType *);
 SymbolType * Exp(SyntaxTreeType *);
 
 #endif // _COMPILER_SEMANTICS_H_
