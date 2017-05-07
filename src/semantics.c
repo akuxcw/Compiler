@@ -56,7 +56,7 @@ SymbolType * StructSpecifier(SyntaxTreeType * node) {
 	if(!strcmp(node->child->next->name, "Tag")) {
 		SymbolType * tmp = getType(str_cat("struct ", node->child->next->child->str_val));
 		if(tmp == NULL) {
-			serror(17, node->line_no, node->child->next->child->str_val);
+			serror(17, node->line_no, str_cat("Undefined structure ", node->child->next->child->str_val));
 		}
 		return tmp;
 	} else {
@@ -88,7 +88,7 @@ SymbolType * StructSpecifier(SyntaxTreeType * node) {
 				SyntaxTreeType * vardec = declist->child->child;
 				bool ferr = false;
 				if(vardec->next != NULL) {
-					serror(15, vardec->line_no, vardec->child->str_val);
+					serror(15, vardec->line_no, str_cat("Redefined field ", vardec->child->str_val));
 					if(declist->child->next != NULL) declist = declist->child->next->next;
 					else break;
 					continue;
@@ -105,7 +105,7 @@ SymbolType * StructSpecifier(SyntaxTreeType * node) {
 				list_foreach(ptr, &type->structure) {
 					Struct * tmps = list_entry(ptr, Struct, list);
 					if(!strcmp(tmps->name, vardec->child->str_val)) {
-						serror(15, vardec->line_no, tmps->name);
+						serror(15, vardec->line_no, str_cat("Redefined field ", tmps->name));
 						ferr = true;
 						break;
 					}
@@ -166,7 +166,7 @@ void VarDec(SyntaxTreeType * node, SymbolType * type, int lv) {
 	}
 	if(exptype != NULL) {
 		if(neqType(type, exptype)) {
-			serror(5, node->line_no, node->child->str_val);
+			serror(5, node->line_no, "Type mismatched for assignment");
 		}
 	}
 }
@@ -177,7 +177,7 @@ void FunDec(SyntaxTreeType * node, SymbolType * type, int dec) {
 	if(DEBUG) printf("FunDec %d\n", node->line_no);
 	SymbolType * t = newp(SymbolType);
 	t->ret = type;
-	t->fun = true;
+	t->type = FUNC_TYPE;
 	t->dec = dec;
 	list_init(&t->func);
 	if(!strcmp(node->child->next->next->name, "VarList")) {
@@ -265,12 +265,12 @@ void Stmt(SyntaxTreeType * node, SymbolType * return_type, int lv) {
 	} else if(!strcmp(node->child->name, "RETURN")) {
 		SymbolType * type = Exp(node->child->next);
 		if(neqType(return_type, type)) {
-			serror(8, node->line_no, "");
+			serror(8, node->line_no, "Type mismatched for return");
 		}
 	} else if(!strcmp(node->child->name, "IF") || !strcmp(node->child->name, "WHILE")) {
 		SymbolType * type = Exp(node->child->next->next);
 		if(type != NULL && type->type != INT_TYPE) {
-			serror(7, node->line_no, "if");
+			serror(7, node->line_no, "Type mismatched for operands");
 		}
 		SyntaxTreeType * tnode = node->child->next->next->next->next;
 		Stmt(tnode, return_type, lv);
@@ -293,32 +293,32 @@ SymbolType * Exp(SyntaxTreeType * node) {
 		char * s = node->child->next->name;
 		if(!strcmp(s, "ASSIGNOP")) {
 			if(!isID(node->child->child)) {
-				serror(6, node->line_no, "exp");
+				serror(6, node->line_no, "The left-hand side of an assignment must be a variable");
 				return NULL;
 			}
 			if(neqType(type1, type2)) {
-				serror(5, node->line_no, "noneq");
+				serror(5, node->line_no, "Type mismatched for assignment");
 				return NULL;
 			}
 			return type2;
 		} else if(!strcmp(s, "AND") || !strcmp(s, "OR") || !strcmp(s, "RELOP")) {
 			if(type1->type != INT_TYPE || type2->type != INT_TYPE) {
-				serror(7, node->line_no, "relop");
+				serror(7, node->line_no, "Type mismatched for operands");
 			}
 			return type1;
 		} else if(!strcmp(s, "PLUS") || !strcmp(s, "MINUS") || !strcmp(s, "STAR") || !strcmp(s, "DIV")) {
 			if((type1->type != INT_TYPE && type1->type != FLOAT_TYPE) || (type2->type != INT_TYPE && type2->type != FLOAT_TYPE) || type1->type != type2->type) {
-				serror(7, node->line_no, "plus");
+				serror(7, node->line_no, "Type mismatched for operands");
 				return NULL;
 			}
 			return type1;
 		} else if(!strcmp(s, "LB")) {
 			if(type1->type != ARRAY_TYPE) {
-				serror(10, node->line_no, "array");
+				serror(10, node->line_no, "Variable is not an array");
 				return NULL;
 			}
 			if(type2->type != INT_TYPE) {
-				serror(12, node->line_no, "a");
+				serror(12, node->line_no, "Variable is not an integer");
 				return NULL;
 			}
 			type1 = type1->elm;
@@ -331,7 +331,7 @@ SymbolType * Exp(SyntaxTreeType * node) {
 	} else if(!strcmp(node->child->name, "NOT")) {
 		SymbolType * type = Exp(node->child->next);
 		if(type->type != INT_TYPE) {
-			serror(7, node->line_no, "not");
+			serror(7, node->line_no, "Type mismatched for operands");
 			return NULL;
 		}
 		return type;
@@ -339,29 +339,25 @@ SymbolType * Exp(SyntaxTreeType * node) {
 		SymbolType * type = FindSymbol(node->child->str_val);
 		if(node->child->next == NULL) {
 			if(type == NULL) {
-				serror(1, node->line_no, "nondef");
+				serror(1, node->line_no, str_cat("Undefined variable ", node->child->str_val));
 			}
 			return type;
 		} else {
 			if(type == NULL) {
-				serror(2, node->line_no, "nondef");
+				serror(2, node->line_no, str_cat("Undefined function ", node->child->str_val));
 				return NULL;
 			}
-			if(!type->fun) {
-				serror(11, node->line_no, "nonfun");
+			if(type->type != FUNC_TYPE) {
+				serror(11, node->line_no, "Variable is not a function");
 				return NULL;
 			}
 			Args(node->child->next->next, type);
 			return type->ret;
 		}
 	} else if(!strcmp(node->child->name, "INT")) {
-		SymbolType * type = newp(SymbolType);
-		memcpy(type, int_type, sizeof(SymbolType));
-		return type;
+		return int_type;
 	} else if(!strcmp(node->child->name, "FLOAT")) {
-		SymbolType * type = newp(SymbolType);
-		memcpy(type, float_type, sizeof(SymbolType));
-		return type;
+		return float_type;
 	}
 }
 
@@ -370,7 +366,7 @@ void Args(SyntaxTreeType * node, SymbolType * type) {
 	if(DEBUG) printf("Args %d %s\n", node->line_no, node->name);
 	if(strcmp(node->name, "Args")) {
 		if(list_empty(&type->func)) return;
-		serror(9, node->line_no, "num");
+		serror(9, node->line_no, "Function is not applicable for arguments");
 	} else {
 		ListHead * ptr = &type->func;
 		list_foreach(ptr, &type->func){
@@ -379,13 +375,13 @@ void Args(SyntaxTreeType * node, SymbolType * type) {
 		while(node != NULL) {
 			ptr = ptr->next;
 			if(ptr == &type->func) {
-				serror(9, node->line_no, "num");
+				serror(9, node->line_no, "Function is not applicable for arguments");
 				return;
 			}
 			SymbolType * tmp1 = list_entry(ptr, Func, list)->type;
 			SymbolType * tmp2 = Exp(node->child);
 			if(neqType(tmp1, tmp2)) {
-				serror(9, node->line_no, "type");
+				serror(9, node->line_no, "Function is not applicable for arguments");
 				return;
 			}
 			if(node->child->next != NULL) {
@@ -393,7 +389,7 @@ void Args(SyntaxTreeType * node, SymbolType * type) {
 			} else break;
 		}
 		if(ptr->next != &type->func) {
-			serror(9, node->line_no, "num");
+			serror(9, node->line_no, "Function is not applicable for arguments");
 		}
 	}
 }

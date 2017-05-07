@@ -22,15 +22,10 @@ void init_symbol() {
 	for(i = 0; i < MAX_LV; ++ i) list_init(&lv_table[i]);
 
 	int_type = newp(SymbolType);
-	str_cpy(int_type->name, "int");
 	int_type->type = INT_TYPE;
 
 	float_type = newp(SymbolType);
-	str_cpy(float_type->name, "float");
 	float_type->type = FLOAT_TYPE;
-//	list_add_after(&type_table, &float_type->list);
-//	list_add_after(&type_table, &int_type->list);
-	SymbolType * int_type = newp(SymbolType);
 }
 
 bool isID(SyntaxTreeType * node) {
@@ -44,7 +39,7 @@ void addType(SymbolType * ntype, int line_no) {
 	if(DEBUG) printf("addtype\n");
 	SymbolType * type = getType(ntype->name);
 	if(type != NULL) {
-		serror(16, line_no, "redef");
+		serror(16, line_no, str_cat("Duplicated name ", ntype->name));
 		return;
 	}
 	list_add_before(&type_table, &ntype->list);
@@ -67,9 +62,10 @@ void addSymbol(char * name, SymbolType * type, int line_no, int lv) {
 		SymbolTable * tmp = list_entry(symbol_table[h].next, SymbolTable, list);
 		if(!strcmp(tmp->name, name)){
 			if(tmp->lv == lv) {
-				if(!type->fun) serror(3, line_no, name);
-				else if(!tmp->type->fun || tmp->type->dec && type->dec) serror(4, line_no, name);
-				else if(neqFunc(tmp->type, type)) serror(19, line_no, name);
+				if(type->type != FUNC_TYPE) serror(3, line_no, str_cat("Redefined variable ", name));
+				else if(tmp->type->type != FUNC_TYPE || tmp->type->dec && type->dec) 
+					serror(4, line_no, str_cat("Redefined function ", name));
+				else if(neqFunc(tmp->type, type)) serror(19, line_no, str_cat("Inconsistent declaration of function ", name));
 				else {
 					tmp->type->dec |= type->dec;
 					return;
@@ -107,9 +103,9 @@ void CheckFunc() {
 	ListHead * ptr;
 	list_foreach(ptr, &lv_table[0]) {
 		SymbolTable * tmp = list_entry(ptr, SymbolTable, lv_list);
-		if(!tmp->type->fun) continue;
+		if(tmp->type->type != FUNC_TYPE) continue;
 		if(!tmp->type->dec) {
-			serror(18, tmp->line_no, tmp->name);
+			serror(18, tmp->line_no, str_cat("Undefined function ", tmp->name));
 		}
 	}
 }
@@ -120,6 +116,7 @@ bool neqType(SymbolType * t1, SymbolType * t2) {
 	if(t1->type == ARRAY_TYPE) {
 		return neqType(t1->elm, t2->elm);
 	}
+	if(t1->type != STRUCT_TYPE) return false;
 	if(t1->name != NULL && t2->name != NULL && !strcmp(t1->name, t2->name))return false;
 	ListHead * ptr1, * ptr2 = t2->structure.next;
 	list_foreach(ptr1, &t1->structure) {
@@ -149,7 +146,7 @@ SymbolType * FindSymbol(char * name) {
 SymbolType * FindStructFiled(SymbolType * type, char * name, int line_no) {
 	if(DEBUG) printf("findfiled\n");
 	if(type->type != STRUCT_TYPE) {
-		serror(13, line_no, "dot");
+		serror(13, line_no, "Variable is not a structure");
 		return NULL;
 	}
 	ListHead * ptr;
@@ -157,7 +154,7 @@ SymbolType * FindStructFiled(SymbolType * type, char * name, int line_no) {
 		Struct * tmp = list_entry(ptr, Struct, list);
 		if(!strcmp(tmp->name, name)) return tmp->type;
 	}
-	serror(14, line_no, "nodef");
+	serror(14, line_no, str_cat("Non-existent field ", name));
 	return NULL;
 }
 

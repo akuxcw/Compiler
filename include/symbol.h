@@ -6,7 +6,7 @@
 
 #define MAX_SYMBOL 0x3fff
 #define MAX_LV 100
-enum {INT_TYPE, FLOAT_TYPE, ARRAY_TYPE, STRUCT_TYPE, FUNC_TYPE, BASIC_TYPE};
+enum {INT_TYPE, FLOAT_TYPE, ARRAY_TYPE, STRUCT_TYPE, FUNC_TYPE};
 
 typedef struct SymbolType SymbolType;
 typedef struct Struct Struct;
@@ -27,12 +27,10 @@ struct Array {
 
 
 struct SymbolType {
-	char * name;
 	int type;
-	bool fun;
 	union {
 		struct {SymbolType * elm; int size;};
-		ListHead structure;
+		struct {char * name; ListHead structure;};
 		struct {bool dec; SymbolType * ret; ListHead func;};
 	};
 	ListHead list;
