@@ -7,9 +7,9 @@ ListHead lv_table[MAX_LV];
 SymbolType * int_type, * float_type;
 
 static unsigned int hash(char * str) {
-	unsigned int val = 0, i;
-	for(; *str; ++ str) {
-		val = (val << 2) + *str;
+	unsigned int val = 0, i, j, l = strlen(str);
+	for(j = 0; j < l; ++ j) {
+		val = (val << 2) + str[j];
 		if(i = val & ~MAX_SYMBOL) val = (val ^ (i >> 12)) & MAX_SYMBOL;
 	}
 	return val;
@@ -114,6 +114,7 @@ bool neqType(SymbolType * t1, SymbolType * t2) {
 	if(t1 == NULL || t2 == NULL) return true;
 	if(t1->type != t2->type) return true;
 	if(t1->type == ARRAY_TYPE) {
+		if(t1->size != t2->size) return true;
 		return neqType(t1->elm, t2->elm);
 	}
 	if(t1->type != STRUCT_TYPE) return false;

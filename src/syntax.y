@@ -13,6 +13,7 @@ int error_state;
  AND OR DOT NOT
  TYPE STRUCT RETURN IF ELSE WHILE
  LP RP LB RB LC RC
+ READ WRITE
  ID 
 
 /*%nonassoc MISSING_SEMI*/
@@ -135,6 +136,8 @@ Exp : Exp ASSIGNOP Exp {BuildTree(&$$, "Exp", 3, $1, $2, $3);}
 | ID %prec LOWER_THAN_LP {BuildTree(&$$, "Exp", 1, $1);}
 | INT {BuildTree(&$$, "Exp", 1, $1);}
 | FLOAT {BuildTree(&$$, "Exp", 1, $1);}
+| READ LP RP {BuildTree(&$$, "Exp", 3, $1, $2, $3);}
+| WRITE LP Exp RP {BuildTree(&$$, "Exp", 4, $1, $2, $3, $4);}
 | error RP
 ;
 Args : Exp COMMA Args {BuildTree(&$$, "Args", 3, $1, $2, $3);}

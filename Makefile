@@ -56,7 +56,7 @@ clean:
 	rm -rf obj/*.*
 
 submit: clean
-	cd .. && zip -r 141220012_lab1.zip $(shell pwd | grep -o '[^/]*$$')
+	cd .. && zip -r 141220012_lab2.zip $(shell pwd | grep -o '[^/]*$$')
 
 #all :
 #	$(FLEX) -o src/lexical.c src/lexical.l

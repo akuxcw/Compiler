@@ -59,6 +59,8 @@ digit [0-9]
 \} {WORK(RC)}
 struct {WORK(STRUCT)}
 return {WORK(RETURN)}
+read {WORK(READ)}
+write {WORK(WRITE)}
 if {WORK(IF)}
 else {WORK(ELSE)}
 while {WORK(WHILE)}

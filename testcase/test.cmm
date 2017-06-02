@@ -1,34 +1,8 @@
-struct Complex
-{
-	float f;
-} a[2123];
-int a;
-int fun(int a, int b){
-	int a = 1;
-}
-
 int main()
-{	
-	float a=234.1e4;
-	int x[123] = (1+1);
-	int z[10][10];
-	int y;
-	float z = 1.0;
-	if(i==1){
-	while(a[1] == a[2]) a = (a[1] + 1);
-	} 
-	while(1) {
-		while(1){
-		}
-	fu(1, 2);
-	a[1].x[1] = 1;
-	a[1][1] = 1;
-	a[1] = 0;
-	y.image = 1.345E3;
-	return 0;
-	}
-	y = y && 11;
-	x = z[10];
-	a[1].c[1][1].b[1.5] = 1;
-	return c0.x-c0.y;
+{
+int n, m;
+m = 1 + 1 * 2;
+n = m * n;
+if(m < 4 && m > n) return m + n;
+else return m - n;
 }

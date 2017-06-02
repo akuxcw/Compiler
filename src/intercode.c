@@ -1,0 +1,353 @@
+#include "intercode.h"
+
+ListHead intercodes;
+
+Operand * zero_op;
+int var_num = 0;
+int label_num = 0;
+char * new_var() {
+	char * s = (char *)malloc(34);
+	sprintf(s, "t__%d", var_num ++);
+	return s;
+}
+
+char * new_label() {
+	char * s = (char *)malloc(34);
+	sprintf(s, "l__%d", label_num ++);
+	return s;
+}
+
+char * neg_op(char * op) {
+	char * s;
+	if(!strcmp(op, "==")) {str_cpy(s, "!=");} 
+	else if(!strcmp(op, "!=")) {str_cpy(s, "==");}
+	else if(!strcmp(op, ">")) {str_cpy(s, "<=");}
+	else if(!strcmp(op, ">=")) {str_cpy(s, "<");}
+	else if(!strcmp(op, "<")) {str_cpy(s, ">=");}
+	else if(!strcmp(op, "<=")) {str_cpy(s, ">");}
+	return s;
+}
+
+Operand * new_op(char * relop) {
+	Operand * op = newp(Operand);
+	str_cpy(op->str_val, relop);
+	return op;
+}
+
+void new_code(int code_type, int carg, ...) {
+	InterCode * code = newp(InterCode);
+	code->type = code_type;
+	list_init(&code->op_list);
+	va_list ap;
+	va_start(ap, carg);
+	int i;
+	for(i = 0; i < carg; ++ i) {
+		Operand * op = va_arg(ap, Operand *);
+		Operand * op1 = newp(Operand);
+		memcpy(op1, op, sizeof(Operand));
+		list_add_before(&code->op_list, &op1->list);
+	}
+	va_end(ap);
+	list_add_before(&intercodes, &code->list);
+}
+
+void translate_Program(SyntaxTreeType * node) {
+	if(node == NULL) return;
+	if(DEBUG) printf("translate_Program %d\n", node->line_no);
+	zero_op = new_op("#0");
+	list_init(&intercodes);
+	translate_ExtDefList(node->child);
+	FILE * fp = fopen("result.ir", "w");
+	ListHead * ptr;
+	Operand * op[4];
+	list_foreach(ptr, &intercodes) {
+		InterCode * code = list_entry(ptr, InterCode, list);
+		int i = 0;
+		ListHead * ptr_;
+		list_foreach(ptr_, &code->op_list) {
+			op[i ++]= list_entry(ptr_, Operand, list);
+		}
+		switch(code->type) {
+			case(LABEL_CODE):
+				fprintf(fp, "LABEL %s :\n", op[0]->str_val);
+				break;
+			case(FUNCTION_CODE) :
+				fprintf(fp, "FUNCTION %s :\n", op[0]->str_val);
+				break;
+			case(ASSIGN_CODE) :
+				fprintf(fp, "%s := %s\n", op[0]->str_val, op[1]->str_val);
+				break;
+			case(PLUS_CODE) :
+				fprintf(fp, "%s := %s + %s\n", op[0]->str_val, op[1]->str_val, op[2]->str_val);
+				break;
+			case(MINUS_CODE) :
+				fprintf(fp, "%s := %s - %s\n", op[0]->str_val, op[1]->str_val, op[2]->str_val);
+				break;
+			case(STAR_CODE) :
+				fprintf(fp, "%s := %s * %s\n", op[0]->str_val, op[1]->str_val, op[2]->str_val);
+				break;
+			case(DIV_CODE) :
+				fprintf(fp, "%s := %s / %s\n", op[0]->str_val, op[1]->str_val, op[2]->str_val);
+				break;
+			case(ZEROMINUS_CODE):
+				fprintf(fp, "%s := #0 - %s\n", op[0]->str_val, op[1]->str_val);
+				break;
+			case(GOTO_CODE):
+				fprintf(fp, "GOTO %s\n", op[0]->str_val);
+				break;
+			case(IF_CODE):
+				fprintf(fp, "IF %s %s %s GOTO %s\n", op[0]->str_val, op[1]->str_val, op[2]->str_val, op[3]->str_val);
+				break;
+			case(RETURN_CODE):
+				fprintf(fp, "RETURN %s\n", op[0]->str_val);
+				break;
+			case(ARG_CODE):
+				fprintf(fp, "ARG %s\n", op[0]->str_val);
+				break;
+			case(CALL_CODE):
+				fprintf(fp, "%s := CALL %s\n", op[0]->str_val, op[1]->str_val);
+				break;
+			case(PARAM_CODE):
+				fprintf(fp, "PARAM %s\n", op[0]->str_val);
+				break;
+			case(READ_CODE):
+				fprintf(fp, "READ %s\n", op[0]->str_val);
+				break;
+			case(WRITE_CODE):
+				fprintf(fp, "WRITE %s\n", op[0]->str_val);
+				break;
+		}
+	}
+}
+
+void translate_ExtDefList(SyntaxTreeType * node) {
+	if(node == NULL) return;
+	if(DEBUG) printf("translate_ExtDefList %d\n", node->line_no);
+	translate_ExtDef(node->child);
+	translate_ExtDefList(node->child->next);
+}
+
+void translate_ExtDef(SyntaxTreeType * node) {
+	if(node == NULL) return;
+	if(DEBUG) printf("translate_ExtDef %d\n", node->line_no);
+	if(!strcmp(node->child->next->name, "FunDec")) {
+		translate_FunDec(node->child->next);
+		translate_CompSt(node->child->next->next);
+	}
+}
+
+void translate_FunDec(SyntaxTreeType * node) {
+	if(node == NULL) return;
+	if(DEBUG) printf("translate_FunDec %d\n", node->line_no);
+	Operand * op = new_op(node->child->str_val);
+	new_code(FUNCTION_CODE, 1, op);
+	if(!strcmp(node->child->next->next->name, "VarList")) {
+		translate_VarList(node->child->next->next);
+	}
+}
+
+void translate_VarList(SyntaxTreeType * node) {
+	if(node == NULL) return;
+	if(DEBUG) printf("translate_VarList %d\n", node->line_no);
+	translate_ParamDec(node->child);
+	if(node->child->next != NULL) {
+		translate_VarList(node->child->next->next);
+	}
+}
+
+void translate_ParamDec(SyntaxTreeType * node) {
+	if(node == NULL) return;
+	if(DEBUG) printf("translate_ParamDec %d\n", node->line_no);
+	Operand * op = new_op(node->child->next->child->str_val);
+	new_code(PARAM_CODE, 1, op);
+}
+
+void translate_CompSt(SyntaxTreeType * node) {
+	if(node == NULL) return;
+	if(DEBUG) printf("translate_CompSt %d\n", node->line_no);
+	if(!strcmp(node->child->next->name, "DefList")) {
+		translate_DefList(node->child->next);
+		if(!strcmp(node->child->next->next->name, "StmtList")) 
+			translate_StmtList(node->child->next->next);
+	} if(!strcmp(node->child->next->name, "StmtList")) 
+		translate_StmtList(node->child->next);
+}
+
+void translate_DefList(SyntaxTreeType * node) {
+	if(node == NULL) return;
+	if(DEBUG) printf("translate_DefList %d\n", node->line_no);
+}
+
+void translate_StmtList(SyntaxTreeType * node) {
+	if(node == NULL) return;
+	if(DEBUG) printf("translate_StmtList %d\n", node->line_no);
+	translate_Stmt(node->child);
+	translate_StmtList(node->child->next);
+}
+
+void translate_Stmt(SyntaxTreeType * node) {
+	if(node == NULL) return;
+	if(DEBUG) printf("translate_Stmt %d\n", node->line_no);
+	InterCode * code = newp(InterCode);
+	list_init(&code->op_list);
+	if(!strcmp(node->child->name, "Exp")) {
+		translate_Exp(node->child);
+	} else if(!strcmp(node->child->name, "CompSt")) {
+		translate_CompSt(node->child);
+	} else if(!strcmp(node->child->name, "RETURN")) {
+		Operand * op = translate_Exp(node->child->next);
+		new_code(RETURN_CODE, 1, op);
+	} else if(!strcmp(node->child->name, "IF")) {
+		Operand * l1 = new_op(new_label());
+		translate_Cond(node->child->next->next, NULL, l1);
+		translate_Stmt(node->child->next->next->next->next);
+		if(node->child->next->next->next->next->next != NULL) {
+			Operand * l2 = new_op(new_label());
+			new_code(GOTO_CODE, 1, l2);
+			new_code(LABEL_CODE, 1, l1);
+			translate_Stmt(node->child->next->next->next->next->next->next);
+			new_code(LABEL_CODE, 1, l2);
+		} else new_code(LABEL_CODE, 1, l1);
+	} else if(!strcmp(node->child->name, "WHILE")) {
+		Operand * l1 = new_op(new_label()), * l2 = new_op(new_label());
+		new_code(LABEL_CODE, 1, l1);
+		translate_Cond(node->child->next->next, NULL, l2);
+		translate_Stmt(node->child->next->next->next->next);
+		new_code(GOTO_CODE, 1, l1);
+		new_code(LABEL_CODE, 1, l2);
+	}
+}
+
+Operand * translate_Exp(SyntaxTreeType * node) {
+	if(node == NULL) return NULL;
+	if(DEBUG) printf("translate_Exp %d\n", node->line_no);
+	if(!strcmp(node->child->name, "Exp")) {
+		Operand * op1 = translate_Exp(node->child), * op2;
+
+		if(!strcmp(node->child->next->next->name, "Exp")) {
+			op2 = translate_Exp(node->child->next->next);
+		}
+
+		char * s = node->child->next->name;
+		if(!strcmp(s, "ASSIGNOP")) {
+			new_code(ASSIGN_CODE, 2, op1, op2);
+		} else if(!strcmp(s, "PLUS") || !strcmp(s, "MINUS") || !strcmp(s, "STAR") || !strcmp(s, "DIV")) {
+			int code_type;
+			switch(s[0]) {
+				case 'P' : code_type = PLUS_CODE; break;
+				case 'M' : code_type = MINUS_CODE; break;
+				case 'S' : code_type = STAR_CODE; break;
+				case 'D' : code_type = DIV_CODE; break;
+			}
+			Operand * op3 = new_op(new_var());
+			new_code(code_type, 3, op3, op1, op2);
+			return op3;
+		} else if(!strcmp(s, "AND") || !strcmp(s, "OR") || !strcmp(s, "RELOP")) {
+			assert(0);
+		} else if(!strcmp(s, "LB")) {
+		} else if(!strcmp(s, "DOT")){
+		}
+	} else if(!strcmp(node->child->name, "MINUS")) {
+		Operand * op1 = new_op(new_var());
+		Operand * op2 = translate_Exp(node->child->next);
+		new_code(MINUS_CODE, 3, op1, zero_op, op2);
+		return op1;
+	} else if(!strcmp(node->child->name, "LP")) {
+		return translate_Exp(node->child->next);
+	} else if(!strcmp(node->child->name, "NOT")) {
+		assert(0);
+	} else if(!strcmp(node->child->name, "ID")) {
+		if(node->child->next == NULL) {
+			Operand * op = new_op(node->child->str_val);
+			return op;
+		} else {
+			Operand * op1 = new_op(new_var()), * op2 = new_op(node->child->str_val);
+			if(!strcmp(node->child->next->next->name, "Args")) translate_Args(node->child->next->next);
+			new_code(CALL_CODE, 2, op1, op2);
+			return op1;
+		}
+	} else if(!strcmp(node->child->name, "INT")) {
+		Operand * op = newp(Operand);
+		op->str_val = (char *)malloc(33);
+		sprintf(op->str_val, "#%d", node->child->int_val);
+		return op;
+	} else if(!strcmp(node->child->name, "FLOAT")) {
+		assert(0);
+	} else if(!strcmp(node->child->name, "READ")) {
+		Operand * op = new_op(new_var());
+		new_code(READ_CODE, 1, op);
+		return op;
+	} else if(!strcmp(node->child->name, "WRITE")) {
+		Operand * op = translate_Exp(node->child->next->next);
+		new_code(WRITE_CODE, 1, op);
+	}
+	return NULL;
+}
+
+void translate_Args(SyntaxTreeType * node) {
+	if(node == NULL) return;
+	if(DEBUG) printf("translate_Cond %d\n", node->line_no);
+	Operand * op = translate_Exp(node->child);
+	if(node->child->next != NULL) translate_Args(node->child->next->next);
+	new_code(ARG_CODE, 1, op);
+}
+
+void translate_Cond(SyntaxTreeType * node, Operand * true_label, Operand * false_label) {
+	if(node == NULL) return;
+	if(DEBUG) printf("translate_Cond %d\n", node->line_no);
+	if(!strcmp(node->child->name, "Exp")) {
+		char * s = node->child->next->name;
+		if(!strcmp(s, "ASSIGNOP")) {
+			Operand * op1 = translate_Exp(node->child);
+			Operand * op2 = translate_Exp(node->child->next->next);
+			new_code(ASSIGN_CODE, 2, op1, op2);
+			if(true_label != NULL) new_code(IF_CODE, 4, op1, new_op("=="), zero_op, true_label);
+			if(false_label != NULL) new_code(IF_CODE, 4, op1, new_op("!="), zero_op, false_label);
+		} else if(!strcmp(s, "PLUS") || !strcmp(s, "MINUS") || !strcmp(s, "STAR") || !strcmp(s, "DIV")) {
+			Operand * op1 = translate_Exp(node->child);
+			Operand * op2 = translate_Exp(node->child->next->next);
+			int code_type;
+			switch(s[0]) {
+				case 'P' : code_type = PLUS_CODE; break;
+				case 'M' : code_type = MINUS_CODE; break;
+				case 'S' : code_type = STAR_CODE; break;
+				case 'D' : code_type = DIV_CODE; break;
+			}
+			Operand * op3 = new_op(new_var());
+			new_code(code_type, 3, op3, op1, op2);
+			if(true_label != NULL) new_code(IF_CODE, 4, op3, new_op("=="), zero_op, true_label);
+			if(false_label != NULL) new_code(IF_CODE, 4, op3, new_op("!="), zero_op, false_label);
+		} else if(!strcmp(s, "AND")) {
+			translate_Cond(node->child, NULL, false_label);
+			translate_Cond(node->child->next->next, true_label, false_label);
+		} else if(!strcmp(s, "OR")) {
+			translate_Cond(node->child, true_label, NULL);
+			translate_Cond(node->child->next->next, true_label, false_label);
+		} else if(!strcmp(s, "RELOP")) {
+			Operand * op1 = translate_Exp(node->child);
+			Operand * op2 = translate_Exp(node->child->next->next);
+			if(true_label != NULL) new_code(IF_CODE, 4, op1, new_op(node->child->next->str_val), op2, true_label);
+			if(false_label != NULL) new_code(IF_CODE, 4, op1, new_op(neg_op(node->child->next->str_val)), op2, false_label);
+		} else if(!strcmp(s, "LB")) {
+		} else if(!strcmp(s, "DOT")){
+		}
+	} else if(!strcmp(node->child->name, "MINUS")){
+	}
+	else if(!strcmp(node->child->name, "LP")) {
+		translate_Cond(node->child->next, true_label, false_label);
+	} else if(!strcmp(node->child->name, "NOT")) {
+		translate_Cond(node->child->next, false_label, true_label);
+	} else if(!strcmp(node->child->name, "ID")) {
+		Operand * op = translate_Exp(node);
+		if(true_label != NULL) new_code(IF_CODE, 4, op, new_op("=="), zero_op, true_label);
+		if(false_label != NULL) new_code(IF_CODE, 4, op, new_op("!="), zero_op, false_label);
+
+	} else if(!strcmp(node->child->name, "INT")) {
+		if(node->child->int_val && true_label != NULL) new_code(GOTO_CODE, 1, true_label);
+		if(!node->child->int_val && false_label != NULL) new_code(GOTO_CODE, 1, false_label);
+	} else if(!strcmp(node->child->name, "FLOAT")) {
+		assert(0);
+	}
+	return;
+
+}

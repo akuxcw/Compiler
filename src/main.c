@@ -1,5 +1,6 @@
 #include "syntax_tree.h"
 #include "semantics.h"
+#include "intercode.h"
 extern int lines;
 void yyparse();
 extern SyntaxTreeType * syntax_tree_root;
@@ -10,6 +11,7 @@ int main() {
 //	PrintTree(syntax_tree_root, 0);
 	init_symbol();
 	Program(syntax_tree_root);
+	translate_Program(syntax_tree_root);
 	return 0;
 }
 

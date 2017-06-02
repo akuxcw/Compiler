@@ -194,7 +194,7 @@ void FunDec(SyntaxTreeType * node, SymbolType * type, int dec) {
 				arr->size = vardec->child->next->next->int_val;
 				arr->elm = f->type;
 				f->type = arr;
-
+				f->type->type = ARRAY_TYPE;
 				vardec = vardec->child;
 			}
 			str_cpy(f->name, vardec->child->str_val);
@@ -264,7 +264,7 @@ void Stmt(SyntaxTreeType * node, SymbolType * return_type, int lv) {
 		CompSt(node->child, return_type, lv + 1);
 	} else if(!strcmp(node->child->name, "RETURN")) {
 		SymbolType * type = Exp(node->child->next);
-		if(neqType(return_type, type)) {
+		if(type != NULL && neqType(return_type, type)) {
 			serror(8, node->line_no, "Type mismatched for return");
 		}
 	} else if(!strcmp(node->child->name, "IF") || !strcmp(node->child->name, "WHILE")) {
@@ -359,6 +359,7 @@ SymbolType * Exp(SyntaxTreeType * node) {
 	} else if(!strcmp(node->child->name, "FLOAT")) {
 		return float_type;
 	}
+	return NULL;
 }
 
 void Args(SyntaxTreeType * node, SymbolType * type) {
@@ -369,8 +370,6 @@ void Args(SyntaxTreeType * node, SymbolType * type) {
 		serror(9, node->line_no, "Function is not applicable for arguments");
 	} else {
 		ListHead * ptr = &type->func;
-		list_foreach(ptr, &type->func){
-		}
 		
 		while(node != NULL) {
 			ptr = ptr->next;
