@@ -1,0 +1,11 @@
+struct STR {
+	int a1, a2, a3;
+} a;
+
+int main() {
+	a.a1 = read();
+	a.a2 = read();
+	a.a3 = read();
+	if(a.a1) if(a.a2) if(a.a3) write(1); else write(2); else write(3);
+	return 0;
+}

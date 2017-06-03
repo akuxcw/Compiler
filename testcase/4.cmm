@@ -1,0 +1,11 @@
+int main() {
+	if(read()) write(1);
+	else if(read()) write(2);
+	else if(read()) write(3);
+	else if(read()) write(4);
+	else if(read()) write(5);
+	else if(read()) write(6);
+	else if(read()) write(7);
+	else if(read()) write(8);
+	else write(9);
+}

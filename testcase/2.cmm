@@ -7,8 +7,7 @@ int fact(int n)
 }
 int main()
 {
-	int m, result;
-	m = read();
+	int m = read(), result;
 	if(m > 1)
 	  result = fact(m);
 	else

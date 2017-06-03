@@ -55,6 +55,8 @@ bool neqFunc(SymbolType *, SymbolType *);
 void CheckFunc();
 SymbolType * FindSymbol(char *);
 SymbolType * FindStructFiled(SymbolType *, char *, int);
+int CalcFiledOffset(SymbolType *, char *);
+int CalcTypeSize(SymbolType *);
 void delLv(int);
 
 #endif // COMPILER_SYMBOL_H_

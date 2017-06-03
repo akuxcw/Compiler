@@ -159,7 +159,35 @@ SymbolType * FindStructFiled(SymbolType * type, char * name, int line_no) {
 	return NULL;
 }
 
+int CalcFiledOffset(SymbolType * type, char * name) {
+	if(DEBUG) printf("calcfiledoffset\n");
+	ListHead * ptr;
+	int offset = 0;
+	assert(type != NULL);
+	list_foreach(ptr, &type->structure) {
+		Struct * tmp = list_entry(ptr, Struct, list);
+		if(!strcmp(tmp->name, name)) return offset;
+		offset += 4;
+	}
+	return -1;
+}
+
+int CalcTypeSize(SymbolType * type) {
+	if(DEBUG) printf("calc type size\n");
+	if(type->type == STRUCT_TYPE) {
+		int size = 0;
+		ListHead * ptr;
+		list_foreach(ptr, &type->structure) {
+			size += 4;
+		}
+		return size;
+	} else if(type->type == ARRAY_TYPE){
+		return type->size * CalcTypeSize(type->elm);
+	} else return 4;
+}
+
 void delLv(int lv) {
+	return;
 	while(!list_empty(&lv_table[lv])) {
 		SymbolTable * tmp = list_entry(lv_table[lv].next, SymbolTable, lv_list);
 		list_del(&tmp->list);
