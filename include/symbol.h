@@ -46,6 +46,7 @@ struct SymbolTable {
 };
 
 void init_symbol();
+unsigned int hash(char *);
 bool isID(SyntaxTreeType *);
 SymbolType * getType(char *);
 void addSymbol(char *, SymbolType *, int, int);

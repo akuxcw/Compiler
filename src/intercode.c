@@ -5,6 +5,7 @@ ListHead dec_table;
 Operand * zero_op;
 int var_num = 0;
 int label_num = 0;
+
 char * NewVar() {
 	char * s = (char *)malloc(34);
 	sprintf(s, "t__%d", var_num ++);
@@ -51,7 +52,7 @@ void NewCode(int code_type, int carg, ...) {
 	list_add_before(&intercodes, &code->list);
 }
 
-bool DecSymbol(char * name) {
+bool ParamSymbol(char * name) {
 	ListHead * ptr;
 	list_foreach(ptr, &dec_table) {
 		Operand * op = list_entry(ptr, Operand, list);
@@ -68,7 +69,7 @@ void translate_Program(SyntaxTreeType * node) {
 	list_init(&dec_table);
 	NewCode(FUNCTION_CODE, 1, NewOperand("START__"));
 	translate_ExtDefList(node->child);
-	FILE * fp = fopen("result.ir", "w");
+	FILE * fp = fopen("obj/result.ir", "w");
 	ListHead * ptr;
 	Operand * op[4];
 	list_foreach(ptr, &intercodes) {
@@ -185,6 +186,8 @@ void translate_ParamDec(SyntaxTreeType * node) {
 	while(strcmp(node->child->name, "ID")) node = node->child;
 	Operand * op = NewOperand(node->child->str_val);
 	NewCode(PARAM_CODE, 1, op);
+	Operand * op1 = NewOperand(node->child->str_val);
+	list_add_before(&dec_table, &op1->list);
 }
 
 void translate_CompSt(SyntaxTreeType * node) {
@@ -237,8 +240,6 @@ void translate_VarDec(SyntaxTreeType * node) {
 			char * s = (char *)malloc(32);
 			sprintf(s, "%d", CalcTypeSize(type));
 			NewCode(DEC_CODE, 2, NewOperand(node->child->str_val), NewOperand(s));
-			Operand * op = NewOperand(node->child->str_val);
-			list_add_before(&dec_table, &op->list);
 		}
 	} else translate_VarDec(node->child);
 }
@@ -287,13 +288,14 @@ Operand * translate_Exp(SyntaxTreeType * node) {
 	if(node == NULL) return NULL;
 	if(DEBUG) printf("translate_Exp %d\n", node->line_no);
 	if(!strcmp(node->child->name, "Exp") || !strcmp(node->child->name, "VarDec")) {
-		Operand * op1 = translate_Exp(node->child), * op2;
-
-		if(!strcmp(node->child->next->next->name, "Exp")) {
-			op2 = translate_Exp(node->child->next->next);
-		}
-
+		Operand * op1, *op2;
 		char * s = node->child->next->name;
+		if(strcmp(s, "LB")) {
+			op1 = translate_Exp(node->child);
+			if(!strcmp(node->child->next->next->name, "Exp")) {
+				op2 = translate_Exp(node->child->next->next);
+			}
+		}
 		if(!strcmp(s, "ASSIGNOP")) {
 			NewCode(ASSIGN_CODE, 2, op1, op2);
 			return op1;
@@ -313,7 +315,9 @@ Operand * translate_Exp(SyntaxTreeType * node) {
 		} else if(!strcmp(s, "LB")) {
 			Operand * op3 = NewOperand(NewVar());
 			Operand * op4 = CalcArrayOffset(node);
-			NewCode(PLUS_CODE, 3, op3, op1, op4);
+			while(strcmp(node->child->name, "ID")) node = node->child;
+			Operand * op5 = translate_Exp(node);
+			NewCode(PLUS_CODE, 3, op3, op5, op4);
 			return NewOperand(str_cat("*", op3->str_val));
 		} else if(!strcmp(s, "DOT")){
 			Operand * op3 = NewOperand(NewVar());
@@ -335,15 +339,16 @@ Operand * translate_Exp(SyntaxTreeType * node) {
 		if(node->child->next == NULL) {
 			Operand * op = NewOperand(node->child->str_val);
 			op->type = FindSymbol(node->child->str_val);
-			if(!DecSymbol(node->child->str_val)) return op;
-			else {
+			if(!ParamSymbol(node->child->str_val) && op->type != NULL && 
+			  (op->type->type == ARRAY_TYPE || op->type->type == STRUCT_TYPE)) {
 				Operand * op2 = NewOperand(str_cat("&",op->str_val));
 				op2->type = op->type;
 				return op2;
-			}
+			} else return op;
 		} else {
+			SymbolType * type = FindSymbol(node->child->str_val);
 			Operand * op1 = NewOperand(NewVar()), * op2 = NewOperand(node->child->str_val);
-			if(!strcmp(node->child->next->next->name, "Args")) translate_Args(node->child->next->next);
+			if(!strcmp(node->child->next->next->name, "Args")) translate_Args(node->child->next->next, type->func.next);
 			NewCode(CALL_CODE, 2, op1, op2);
 			return op1;
 		}
@@ -351,7 +356,9 @@ Operand * translate_Exp(SyntaxTreeType * node) {
 		Operand * op = newp(Operand);
 		op->str_val = (char *)malloc(33);
 		sprintf(op->str_val, "#%d", node->child->int_val);
-		return op;
+		Operand * op1 = NewOperand(NewVar());
+		NewCode(ASSIGN_CODE, 2, op1, op);
+		return op1;
 	} else if(!strcmp(node->child->name, "FLOAT")) {
 		assert(0);
 	} else if(!strcmp(node->child->name, "READ")) {
@@ -366,11 +373,16 @@ Operand * translate_Exp(SyntaxTreeType * node) {
 	return NULL;
 }
 
-void translate_Args(SyntaxTreeType * node) {
+void translate_Args(SyntaxTreeType * node, ListHead * ptr) {
 	if(node == NULL) return;
 	if(DEBUG) printf("translate_Args %d\n", node->line_no);
+	Func * func = list_entry(ptr, Func, list);
 	Operand * op = translate_Exp(node->child);
-	if(node->child->next != NULL) translate_Args(node->child->next->next);
+	if(func->type->type == ARRAY_TYPE || func->type->type == STRUCT_TYPE) {
+//		printf("***\n");
+		if(op->str_val[0] == '*') op->str_val = &op->str_val[1];
+	}
+	if(node->child->next != NULL) translate_Args(node->child->next->next, ptr->next);
 	NewCode(ARG_CODE, 1, op);
 }
 
@@ -464,6 +476,7 @@ Operand * CalcArrayOffset(SyntaxTreeType * node) {
 		}
 		type = type->elm;
 	}
+	op->type = type;
 	return op;
 }
 

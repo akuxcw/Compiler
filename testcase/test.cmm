@@ -1,8 +1,22 @@
+struct A {
+	int x, y, z;
+};
+
+int add(struct A a, int aa, int aaa)
+{
+	return a.x + a.y + a.z + aa + aaa;
+}
+
 int main()
 {
-int n, m;
-m = 1 + 1 * 2;
-n = m * n;
-if(m < 4 && m > n) return m + n;
-else return m - n;
+struct A b, c;
+b.x = 1;
+b.y = 2;
+b.z = 3;
+c.x = -1;
+c.y = -2;
+c.z = -3;
+write(add(b, b.x, b.y));
+write(add(c, c.x, c.y));
+return 0;
 }

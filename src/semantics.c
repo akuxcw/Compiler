@@ -161,7 +161,6 @@ void VarDec(SyntaxTreeType * node, SymbolType * type, int lv) {
 		arr->elm = t;
 		arr->type = ARRAY_TYPE;
 		t = arr;
-
 		node = node->child;
 	}
 	if(exptype != NULL) {

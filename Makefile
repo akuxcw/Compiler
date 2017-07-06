@@ -49,14 +49,15 @@ $(YFC): $(YFILE)
 .PHONY: clean test submit
 
 file	:= test.cmm
+out		:= result.ir
 
 test: $(PARSER)
-	./$(PARSER) < testcase/$(file)
+	./$(PARSER) < testcase/$(file) > obj/$(out)
 clean:
 	rm -rf obj/*.*
 
 submit: clean
-	cd .. && zip -r 141220012_lab2.zip $(shell pwd | grep -o '[^/]*$$')
+	cd .. && zip -r 141220012_lab3.zip $(shell pwd | grep -o '[^/]*$$')
 
 #all :
 #	$(FLEX) -o src/lexical.c src/lexical.l

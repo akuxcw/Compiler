@@ -6,7 +6,7 @@ ListHead symbol_table[MAX_SYMBOL];
 ListHead lv_table[MAX_LV];
 SymbolType * int_type, * float_type;
 
-static unsigned int hash(char * str) {
+unsigned int hash(char * str) {
 	unsigned int val = 0, i, j, l = strlen(str);
 	for(j = 0; j < l; ++ j) {
 		val = (val << 2) + str[j];
