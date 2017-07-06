@@ -49,10 +49,12 @@ $(YFC): $(YFILE)
 .PHONY: clean test submit
 
 file	:= test.cmm
-out		:= result.ir
+out		:= result.s
 
 test: $(PARSER)
 	./$(PARSER) < testcase/$(file) > obj/$(out)
+	spim -file obj/$(out)
+
 clean:
 	rm -rf obj/*.*
 

@@ -1,14 +1,20 @@
-int sqrt(int x) {
-	int l = 0, r = x;
-	while(l != r) {
-		int m = (l+r) / 2 + 1;
-		if(m * m > x) r = m - 1; else l = m;
+int main()
+{
+	int a[10];
+	int i = 0, j = 10;
+	int min = 0;
+	while(i<j) {
+		int ti = (i+1) * (i+1) * (i+1);
+		a[i] = ti - ti/j*j;
+		i = i+1;
 	}
-	return l;
-}
-
-int main() {
-	int x = read(), y = sqrt(x);
-	write(y);
+	i = 1;
+	while(i<j) {
+		if(a[i] < a[min]) {
+			min = i;
+		}
+		i = i+1;
+	}
+	write(a[min]);
 	return 0;
 }

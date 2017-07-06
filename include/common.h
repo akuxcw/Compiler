@@ -14,6 +14,9 @@ typedef char bool;
 #define true 1
 #define false 0
 
+#define max(a,b) ( ((a)>(b)) ? (a):(b) )
+#define min(a,b) ( ((a)>(b)) ? (b):(a) )
+
 static char * str_cat(const char * s1, const char * s2) {
 	char * s = (char *)malloc(strlen(s1) + strlen(s2) + 1);
 	sprintf(s, "%s%s", s1, s2);

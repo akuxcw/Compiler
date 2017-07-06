@@ -133,6 +133,7 @@ void translate_Program(SyntaxTreeType * node) {
 				break;
 		}
 	}
+	fclose(fp);
 }
 
 void translate_ExtDefList(SyntaxTreeType * node) {
